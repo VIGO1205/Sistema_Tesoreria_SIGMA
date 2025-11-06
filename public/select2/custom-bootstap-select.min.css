@@ -1,0 +1,67 @@
+/* Botón principal del combo */
+.bootstrap-select .dropdown-toggle {
+  background-color: #f9fafb; /* bg-gray-50 */
+  border: 1px solid #d1d5db; /* border-gray-300 */
+  border-radius: 0.5rem;     /* rounded-lg */
+  padding: 0.5rem 0.75rem;   /* py-2 px-3 */
+  font-size: 0.875rem;       /* text-sm */
+  color: #374151;            /* text-gray-700 */
+  height: auto;
+}
+
+/* Hover y focus */
+.bootstrap-select .dropdown-toggle:hover,
+.bootstrap-select .dropdown-toggle:focus {
+  border-color: #818cf8; /* border-indigo-400 */
+  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.3); /* ring-indigo-300/30 */
+}
+
+/* Flecha */
+.bootstrap-select .dropdown-toggle::after {
+  margin-top: -0.35em;
+}
+
+/* Lista desplegable */
+.bootstrap-select .dropdown-menu {
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  padding: 0.25rem 0;
+}
+
+/* Opciones */
+.bootstrap-select .dropdown-menu li a {
+  padding: 0.5rem 1rem;
+  color: #374151; /* text-gray-700 */
+}
+
+/* Opción activa */
+.bootstrap-select .dropdown-menu li.active a {
+  background-color: #6366f1; /* indigo-500 */
+  color: white;
+}
+
+/* Dark mode */
+.dark .bootstrap-select .dropdown-toggle {
+  background-color: #1f2937; /* gray-800 */
+  border-color: #374151;     /* gray-700 */
+  color: #f9fafb;            /* text-gray-50 */
+}
+
+.dark .bootstrap-select .dropdown-toggle:hover,
+.dark .bootstrap-select .dropdown-toggle:focus {
+  border-color: #818cf8; /* indigo-400 */
+  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.3);
+}
+
+.dark .bootstrap-select .dropdown-menu {
+  background-color: #374151; /* gray-700 */
+}
+
+.dark .bootstrap-select .dropdown-menu li a {
+  color: #f9fafb;
+}
+
+.dark .bootstrap-select .dropdown-menu li.active a {
+  background-color: #6366f1; /* indigo-500 */
+  color: white;
+}
