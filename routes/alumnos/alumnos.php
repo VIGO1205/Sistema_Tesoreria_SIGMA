@@ -17,7 +17,7 @@ Route::group(['middleware' => ['can:manage-resource,"alumnos","create"']], funct
 
     Route::get('/add/{id}/familiares', [AlumnoController::class, 'add_familiares'])
         ->name('add_familiares');
-    
+
    Route::post('/add/{id}/familiares', [AlumnoController::class, 'guardarFamiliares'])
    ->name('guardar_familiares');
 
@@ -32,7 +32,7 @@ Route::group(['middleware' => ['can:manage-resource,"alumnos","create"']], funct
     Route::post('/guardar-familiares-session', [AlumnoController::class, 'guardarFamiliaresSession'])
         ->name('guardar_familiares_session');
 
-        
+
 });
 
 Route::group(['middleware' => ['can:manage-resource,"alumnos","edit"']], function(){
@@ -54,3 +54,6 @@ Route::group(['middleware' => ['can:manage-resource,"alumnos","download"']], fun
 
     Route::redirect('/mas/export', '/alumnos/export');
 });
+
+// Rutas para solicitudes de traslado (UI + APIs AJAX + envío de PDF)
+require __DIR__ . '/traslados.php';

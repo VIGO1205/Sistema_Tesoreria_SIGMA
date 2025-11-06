@@ -56,8 +56,8 @@ class Alumno extends Model
         return [
             'fecha_nacimiento' => 'date',
             'fecha_bautizo' => 'date',
-            'año_ingreso' => 'integer', 
-            'num_habitaciones' => 'integer', 
+            'año_ingreso' => 'integer',
+            'num_habitaciones' => 'integer',
             'num_habitantes' => 'integer',
         ];
     }
@@ -77,6 +77,11 @@ class Alumno extends Model
     public function deudas()
     {
         return $this->hasMany(Deuda::class, 'id_alumno', 'id_alumno');
+    }
+
+    public function solicitudesTraslado()
+    {
+        return $this->hasMany(SolicitudTraslado::class, 'id_alumno', 'id_alumno');
     }
 
 }

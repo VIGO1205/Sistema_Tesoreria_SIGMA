@@ -23,3 +23,11 @@ Route::group([
 ], function(){
     require __DIR__ . '/familiares.php';
 });
+
+Route::group([
+    'prefix' => 'traslados',
+    'as' => 'traslado_',
+    'middleware' => ['can:access-resource,"alumnos"'],
+], function(){
+    require __DIR__ . '/traslados.php';
+});
