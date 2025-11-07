@@ -23,7 +23,7 @@
             'icon' => 'birrete'
         ])
     @endcan
-    
+
     {{-- Gestión de Alumnos --}}
     @can('access-resource', 'alumnos')
         @include('components.para-sidebar.dropdown-button', [
@@ -32,11 +32,13 @@
                 'Alumnos',
                 'Matrículas',
                 'Familiares',
+                'Generar Solicitud Traslado',
             ],
             'links' => [
                 'Alumnos' => 'alumno_view',
                 'Matrículas' => 'matricula_view',
-                'Familiares' => 'familiar_view',    
+                'Familiares' => 'familiar_view',
+                'Generar Solicitud Traslado' => 'traslado_view',
             ],
             'icon' => 'persona'
         ])
@@ -98,7 +100,7 @@
             'icon' => 'monedas'
         ])
     @endcan
-    
+
     {{-- Reportes y Estadísticas --}}
     @can('access-resource', 'reportes')
         @include('components.para-sidebar.dropdown-button', [
