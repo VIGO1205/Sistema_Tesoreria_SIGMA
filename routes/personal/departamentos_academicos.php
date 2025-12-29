@@ -2,11 +2,15 @@
 
 use App\Http\Controllers\DepartamentoAcademicoController;
 
+// Rutas de vista (permiso view implícito por el grupo padre)
 Route::get('/', [DepartamentoAcademicoController::class, 'index'])
     ->name('view');
 
 Route::get('/mas', [DepartamentoAcademicoController::class, 'viewAll'])
     ->name('viewAll');
+
+Route::get('/{id}/docentes', [DepartamentoAcademicoController::class, 'docentes'])
+    ->name('docentes');  // Cambié el nombre para que sea consistente con el prefijo del grupo
 
 Route::group(['middleware' => ['can:manage-resource,"personal","create"']], function(){
     Route::get('/crear', [DepartamentoAcademicoController::class, 'create'])
@@ -19,6 +23,15 @@ Route::group(['middleware' => ['can:manage-resource,"personal","create"']], func
 Route::group(['middleware' => ['can:manage-resource,"personal","edit"']], function(){
     Route::get('/{id}/editar', [DepartamentoAcademicoController::class, 'edit'])
         ->name('edit');
+
+    Route::get('/{id}/agregar-docente', [DepartamentoAcademicoController::class, 'agregarDocente'])
+        ->name('agregar_docente');
+    
+    Route::post('/{id}/agregar-docente', [DepartamentoAcademicoController::class, 'guardarDocente'])
+        ->name('guardar_docente');
+    
+    Route::post('/{id}/quitar-docente', [DepartamentoAcademicoController::class, 'quitarDocente'])
+        ->name('quitar_docente');
 
     Route::patch('/{id}/editar', [DepartamentoAcademicoController::class, 'editEntry'])
         ->name('editEntry');

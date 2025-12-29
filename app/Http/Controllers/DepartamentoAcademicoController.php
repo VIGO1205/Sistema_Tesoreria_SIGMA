@@ -92,8 +92,8 @@ class DepartamentoAcademicoController extends Controller
         $cautionModal = CautionModalComponent::new()
             ->cautionMessage('¿Estás seguro?')
             ->action('Estás eliminando el Departamento Académico')
-            ->columns(['Nombre'])
-            ->rows([''])
+            ->columns(['ID', 'Nombre'])
+            ->rows(['', ''])
             ->lastWarningMessage('Borrar esto afectará a todo el personal vinculado a este Departamento.')
             ->confirmButton('Sí, bórralo')
             ->cancelButton('Cancelar')
@@ -119,17 +119,24 @@ class DepartamentoAcademicoController extends Controller
         $content->filterConfig = $filterConfig;
 
         $table = new TableComponent();
-        $table->columns = ["ID", "Nombre"];
+        $table->columns = ["ID", "Nombre", "N° Docentes"];
         $table->rows = [];
 
         foreach ($query as $departamento) {
+            // Contar docentes activos del departamento
+            $cantidadDocentes = Personal::where('id_departamento', $departamento->id_departamento)
+                ->where('estado', 1)
+                ->count();
+
             array_push($table->rows, [
                 $departamento->id_departamento,
                 $departamento->nombre,
+                $cantidadDocentes,
             ]);
         }
 
         $table->actions = [
+            new TableAction('view', 'departamento_academico_docentes', $resource), // Ver docentes
             new TableAction('edit', 'departamento_academico_edit', $resource),
             new TableAction('delete', '', $resource),
         ];
@@ -152,6 +159,180 @@ class DepartamentoAcademicoController extends Controller
     {
         return static::index($request, true);
     }
+
+    /* ==================== GESTIÓN DE DOCENTES ==================== */
+
+    public function docentes(Request $request, $id)
+    {
+        $departamento = DepartamentoAcademico::findOrFail($id);
+
+        $params = RequestHelper::extractSearchParams($request);
+        $search = $params->search;
+        $showing = $params->showing ?? 10;
+
+        $page = CRUDTablePage::new()
+            ->title("Docentes - " . $departamento->nombre)
+            ->sidebar(new AdministrativoSidebarComponent())
+            ->header(new AdministrativoHeaderComponent());
+
+        $content = CRUDTableComponent::new()
+            ->title("Docentes del Departamento: " . $departamento->nombre);
+
+        /* Botones */
+        $volverButton = new TableButtonComponent("tablesv2.buttons.volver", ["redirect" => "departamento_academico_view"]);
+        $agregarDocenteButton = new TableButtonComponent("tablesv2.buttons.agregar", ["redirect" => "departamento_academico_agregar_docente", "params" => ['id' => $id]]);
+
+        $content->addButton($volverButton);
+        $content->addButton($agregarDocenteButton);
+
+        /* Paginador */
+        $paginatorRowsSelector = new PaginatorRowsSelectorComponent();
+        $paginatorRowsSelector->valueSelected = $showing;
+        $content->paginatorRowsSelector($paginatorRowsSelector);
+
+        /* Searchbox */
+        $searchBox = new SearchBoxComponent();
+        $searchBox->placeholder = "Buscar docente...";
+        $searchBox->value = $search;
+        $content->searchBox($searchBox);
+
+        /* Modal para quitar docente */
+        $cautionModal = CautionModalComponent::new()
+            ->cautionMessage('¿Estás seguro?')
+            ->action('Estás quitando al docente del departamento')
+            ->columns(['DNI', 'Nombre', 'Cargo'])
+            ->rows(['', '', ''])
+            ->lastWarningMessage('El docente será removido de este departamento.')
+            ->confirmButton('Sí, quitar')
+            ->cancelButton('Cancelar')
+            ->isForm(true)
+            ->dataInputName('id_personal')
+            ->build();
+
+        $page->modals([$cautionModal]);
+
+        /* Query de docentes */
+        $queryDocentes = Personal::where('id_departamento', $id)
+            ->where('estado', 1);
+
+        if (!empty($search)) {
+            $queryDocentes->where(function ($q) use ($search) {
+                $q->where('dni', 'LIKE', "%{$search}%")
+                    ->orWhere('primer_nombre', 'LIKE', "%{$search}%")
+                    ->orWhere('apellido_paterno', 'LIKE', "%{$search}%")
+                    ->orWhere('apellido_materno', 'LIKE', "%{$search}%")
+                    ->orWhere('cargo', 'LIKE', "%{$search}%");
+            });
+        }
+
+        $docentes = $queryDocentes->paginate($showing);
+
+        if ($params->page > $docentes->lastPage() && $docentes->lastPage() > 0) {
+            $params->page = 1;
+            $docentes = $queryDocentes->paginate($showing);
+        }
+
+        $table = new TableComponent();
+        $table->columns = ["ID", "DNI", "Nombre Completo", "Cargo", "Teléfono"];
+        $table->rows = [];
+
+        foreach ($docentes as $docente) {
+            $nombreCompleto = trim(
+                ($docente->primer_nombre ?? '') . ' ' .
+                ($docente->otros_nombres ?? '') . ' ' .
+                ($docente->apellido_paterno ?? '') . ' ' .
+                ($docente->apellido_materno ?? '')
+            );
+
+            array_push($table->rows, [
+                $docente->id_personal,
+                $docente->dni,
+                $nombreCompleto,
+                $docente->cargo ?? 'Sin cargo',
+                $docente->telefono ?? 'Sin teléfono',
+            ]);
+        }
+
+        $table->actions = [
+            new TableAction('remove', 'departamento_academico_quitar_docente', 'personal', ['id_departamento' => $id]),
+        ];
+
+        $paginator = new TablePaginator($params->page, $docentes->lastPage(), [
+            'search' => $search,
+            'showing' => $showing,
+        ]);
+        $table->paginator = $paginator;
+
+        $content->tableComponent($table);
+
+        $page->content($content->build());
+
+        return $page->render();
+    }
+
+    public function agregarDocente(Request $request, $id)
+    {
+        $departamento = DepartamentoAcademico::findOrFail($id);
+
+        // Docentes sin departamento asignado o disponibles
+        $docentesDisponibles = Personal::where('estado', 1)
+            ->where(function ($q) {
+                $q->whereNull('id_departamento')
+                    ->orWhere('id_departamento', 0);
+            })
+            ->get();
+
+        $data = [
+            'return' => route('departamento_academico_docentes', ['id' => $id]),
+            'departamento' => $departamento,
+            'docentes_disponibles' => $docentesDisponibles,
+        ];
+
+        return view('gestiones.departamento_academico.agregar_docente', compact('data'));
+    }
+
+    public function guardarDocente(Request $request, $id)
+    {
+        $request->validate([
+            'id_personal' => 'required|exists:personal,id_personal',
+        ], [
+            'id_personal.required' => 'Seleccione un docente.',
+            'id_personal.exists' => 'El docente seleccionado no existe.',
+        ]);
+
+        $departamento = DepartamentoAcademico::findOrFail($id);
+        $docente = Personal::findOrFail($request->input('id_personal'));
+
+        // Verificar que el docente no esté ya en otro departamento
+        if ($docente->id_departamento && $docente->id_departamento != $id) {
+            return back()->withErrors(['id_personal' => 'Este docente ya pertenece a otro departamento.'])->withInput();
+        }
+
+        $docente->update([
+            'id_departamento' => $id
+        ]);
+
+        return redirect()->route('departamento_academico_docentes', ['id' => $id])
+            ->with('success', 'Docente agregado correctamente al departamento.');
+    }
+
+    public function quitarDocente(Request $request, $id)
+    {
+        $idPersonal = $request->input('id_personal');
+
+        $docente = Personal::where('id_personal', $idPersonal)
+            ->where('id_departamento', $id)
+            ->firstOrFail();
+
+        $docente->update([
+            'id_departamento' => null
+        ]);
+
+        return redirect()->route('departamento_academico_docentes', ['id' => $id])
+            ->with('success', 'Docente removido del departamento.');
+    }
+
+    /* ==================== CRUD BÁSICO ==================== */
 
     public function create(Request $request)
     {
@@ -231,12 +412,7 @@ class DepartamentoAcademicoController extends Controller
         $requested->update(['estado' => '0']);
 
         // Desactivar personal vinculado
-        $docentes = Personal::where('id_departamento', '=', $id)->get();
-
-        foreach ($docentes as $doc) {
-            $doc->estado = 0;
-            $doc->save();
-        }
+        Personal::where('id_departamento', '=', $id)->update(['estado' => 0]);
 
         return redirect(route('departamento_academico_view', ['deleted' => true]));
     }
@@ -254,11 +430,6 @@ class DepartamentoAcademicoController extends Controller
 
             $query = static::doSearch($sqlColumns, $params->search, null, $params->applied_filters);
 
-            \Log::info('Exportando departamentos académicos', [
-                'format' => $format,
-                'total_records' => $query->count(),
-            ]);
-
             if ($format === 'pdf') {
                 return $this->exportPdf($query);
             }
@@ -273,7 +444,7 @@ class DepartamentoAcademicoController extends Controller
 
     private function exportExcel($departamentos)
     {
-        $headers = ['ID', 'Nombre'];
+        $headers = ['ID', 'Nombre', 'N° Docentes'];
         $fileName = 'departamentos_academicos_' . date('Y-m-d_H-i-s') . '.xlsx';
 
         return ExcelExportHelper::exportExcel(
@@ -281,8 +452,13 @@ class DepartamentoAcademicoController extends Controller
             $headers,
             $departamentos,
             function ($sheet, $row, $departamento) {
+                $cantidadDocentes = Personal::where('id_departamento', $departamento->id_departamento)
+                    ->where('estado', 1)
+                    ->count();
+
                 $sheet->setCellValue('A' . $row, $departamento->id_departamento);
                 $sheet->setCellValue('B' . $row, $departamento->nombre);
+                $sheet->setCellValue('C' . $row, $cantidadDocentes);
             },
             'Departamentos Académicos',
             'Exportación de Departamentos Académicos',
@@ -299,16 +475,21 @@ class DepartamentoAcademicoController extends Controller
         $fileName = 'departamentos_academicos_' . date('Y-m-d_H-i-s') . '.pdf';
 
         $rows = $departamentos->map(function ($departamento) {
+            $cantidadDocentes = Personal::where('id_departamento', $departamento->id_departamento)
+                ->where('estado', 1)
+                ->count();
+
             return [
                 $departamento->id_departamento,
                 $departamento->nombre,
+                $cantidadDocentes,
             ];
         })->toArray();
 
         $html = PDFExportHelper::generateTableHtml([
             'title' => 'Departamentos Académicos',
             'subtitle' => 'Listado de Departamentos Académicos',
-            'headers' => ['ID', 'Nombre'],
+            'headers' => ['ID', 'Nombre', 'N° Docentes'],
             'rows' => $rows,
             'footer' => 'Sistema de Gestión Académica SIGMA - Generado automáticamente',
         ]);
