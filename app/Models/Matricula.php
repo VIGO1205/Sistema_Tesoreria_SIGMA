@@ -22,6 +22,7 @@ class Matricula extends Model
         'observaciones',
         'id_grado',
         'nombreSeccion',
+        'tipo', 
         'estado'
     ];
 

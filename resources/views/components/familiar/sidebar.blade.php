@@ -21,9 +21,11 @@
             'name' => 'Matrículas',
             'items' => [
                 'Ver matrículas del Alumno',
+                'Realizar Matrícula',
             ],
             'links' => [
                 'Ver matrículas del Alumno' => 'familiar_matricula_view',
+                'Realizar Matrícula' => 'familiar_matricula_prematricula_create',
             ],
             'icon' => 'birrete'
         ])
