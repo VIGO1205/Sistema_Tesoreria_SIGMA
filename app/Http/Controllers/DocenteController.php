@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Helpers\CRUDTablePage;
 use App\Helpers\ExcelExportHelper;
+use App\Helpers\Exporter\Enum\Exporter;
 use App\Helpers\PDFExportHelper;
 use App\Helpers\RequestHelper;
 use App\Helpers\TableAction;
@@ -17,6 +18,9 @@ use App\Helpers\Tables\SearchBoxComponent;
 use App\Helpers\Tables\TableButtonComponent;
 use App\Helpers\Tables\TableComponent;
 use App\Helpers\Tables\TablePaginator;
+use App\Interfaces\IExporterFactory;
+use App\Interfaces\IExporterService;
+use App\Interfaces\IExportRequestFactory;
 use App\Models\DepartamentoAcademico;
 use App\Models\Personal;
 use App\Models\User;
@@ -500,93 +504,33 @@ class DocenteController extends Controller
     }
 
 
-    public function export(Request $request)
+    public function export(Request $request, IExportRequestFactory $requestFactory, IExporterService $exporterService)
     {
-        $format = $request->input('export', 'excel');
         $sqlColumns = ["id_personal", "codigo_personal", "dni", "apellido_paterno", "apellido_materno", "primer_nombre", "otros_nombres", "departamento"];
 
         $params = RequestHelper::extractSearchParams($request);
 
         $query = static::doSearch($sqlColumns, $params->search, null, $params->applied_filters);
 
-        if ($format === 'excel') {
-            return $this->exportExcel($query);
-        } elseif ($format === 'pdf') {
-            return $this->exportPdf($query);
-        }
+        $data = $query->map(function ($docente) {
+            return [
+                $docente->departamentos_academicos()->first()->nombre,
+                $docente->codigo_personal,
+                $docente->dni,
+                $docente->apellido_paterno . " " . $docente->apellido_materno,
+                $docente->primer_nombre . " " . $docente->otros_nombres,
+            ];
+        });
 
-        return abort(400, 'Formato no válido');
-    }
-
-    private function exportExcel($docentes)
-    {
-        $headers = ['ID', 'Codigo de Personal', 'DNI', 'Apellidos', 'Nombres', 'Departamento Académico'];
-        $fileName = 'docentes_' . date('Y-m-d_H-i-s') . '.xlsx';
-        $title = 'Docentes';
-        $subject = 'Exportación de Docentes';
-        $description = 'Listado de docentes del sistema';
-
-        return ExcelExportHelper::exportExcel(
-            $fileName,
-            $headers,
-            $docentes,
-            function ($sheet, $row, $docente) {
-                $sheet->setCellValue('A' . $row, $docente->id_personal);
-                $sheet->setCellValue('B' . $row, $docente->codigo_personal);
-                $sheet->setCellValue('C' . $row, $docente->dni);
-                $sheet->setCellValue('D' . $row, $docente->apellido_paterno . ' ' . $docente->apellido_materno);
-                $sheet->setCellValue('E' . $row, $docente->primer_nombre . ' ' . $docente->otros_nombres);
-                $sheet->setCellValue('F' . $row, $docente->departamentos_academicos->nombre);
-            },
+        $title = 'Listado de Docentes';
+        $headers = ["Dep. Académico", "Código", "DNI", "Apellidos", "Nombres"];
+        $exportRequest = $requestFactory->create(
             $title,
-            $subject,
-            $description
+            $headers,
+            $data->toArray(),
+            ['filename' => 'docentes_' . date('d_m_Y')]
         );
-    }
 
-    private function exportPdf($docentes)
-    {
-        try {
-            if ($docentes instanceof \Illuminate\Database\Eloquent\Collection) {
-                $data = $docentes;
-            } elseif ($docentes instanceof \Illuminate\Pagination\LengthAwarePaginator) {
-                $data = collect($docentes->items());
-            } else {
-                $data = collect($docentes);
-            }
-
-            if ($data->isEmpty()) {
-                return response()->json(['error' => 'No hay datos para exportar'], 400);
-            }
-
-            $fileName = 'docentes_' . date('Y-m-d_H-i-s') . '.pdf';
-
-            $rows = $data->map(function ($docente) {
-                return [
-                    $docente->id_personal ?? 'N/A',
-                    $docente->codigo_personal ?? 'N/A',
-                    $docente->dni ?? 'N/A',
-                    ($docente->apellido_paterno ?? '') . ' ' . ($docente->apellido_materno ?? ''),
-                    ($docente->primer_nombre ?? '') . ' ' . ($docente->otros_nombres ?? ''),
-                    $docente->departamentos_academicos->nombre ?? 'N/A'
-                ];
-            })->toArray();
-
-            $html = PDFExportHelper::generateTableHtml([
-                'title' => 'Docentes',
-                'subtitle' => 'Listado de Docentes',
-                'headers' => ['ID', 'Código', 'DNI', 'Apellidos', 'Nombres', 'Departamento'],
-                'rows' => $rows,
-                'footer' => 'Sistema de Gestión Académica SIGMA - Generado automáticamente',
-            ]);
-
-            return PDFExportHelper::exportPdf($fileName, $html);
-
-        } catch (\Exception $e) {
-            \Log::error('Error en exportPdf: ' . $e->getMessage());
-            return response()->json([
-                'error' => 'Error generando PDF: ' . $e->getMessage()
-            ], 500);
-        }
+        return $exporterService->exportAsResponse($request, $exportRequest);
     }
 }

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\FilteredSearchQuery;
+use App\Interfaces\IExporterService;
+use App\Interfaces\IExportRequestFactory;
 use App\Models\NivelEducativo;
 use App\Models\Seccion;
 use DB;
@@ -28,7 +30,8 @@ use App\Http\Controllers\Controller;
 
 class GradoController extends Controller
 {
-    private static function doSearch($sqlColumns, $search, $maxEntriesShow, $appliedFilters = []){
+    private static function doSearch($sqlColumns, $search, $maxEntriesShow, $appliedFilters = [])
+    {
         $columnMap = [
             'ID' => 'id_grado',
             'Grado' => 'nombre_grado',
@@ -39,22 +42,24 @@ class GradoController extends Controller
 
         FilteredSearchQuery::fromQuery($query, $sqlColumns, $search, $appliedFilters, $columnMap);
 
-        if ($maxEntriesShow == null) return $query->get();
+        if ($maxEntriesShow == null)
+            return $query->get();
 
         return $query->paginate($maxEntriesShow);
     }
 
-    public function index(Request $request, $long = false){
+    public function index(Request $request, $long = false)
+    {
         $sqlColumns = ["id_grado", "nombre_grado", "NivelEducativo.descripcion"];
         $resource = 'academica';
 
         $params = RequestHelper::extractSearchParams($request);
-        
+
         $page = CRUDTablePage::new()
             ->title("Grados")
             ->sidebar(new AdministrativoSidebarComponent())
             ->header(new AdministrativoHeaderComponent());
-        
+
         $content = CRUDTableComponent::new()
             ->title("Grados");
 
@@ -63,7 +68,7 @@ class GradoController extends Controller
         $descargaButton = new TableButtonComponent("tablesv2.buttons.download");
         $createNewEntryButton = new TableButtonComponent("tablesv2.buttons.createNewEntry", ["redirect" => "grado_create"]);
 
-        if (!$long){
+        if (!$long) {
             $vermasButton = new TableButtonComponent("tablesv2.buttons.vermas", ["redirect" => "grado_viewAll"]);
         } else {
             $params->showing = 100;
@@ -77,7 +82,8 @@ class GradoController extends Controller
 
         /* Paginador */
         $paginatorRowsSelector = new PaginatorRowsSelectorComponent();
-        if ($long) $paginatorRowsSelector = new PaginatorRowsSelectorComponent([100]);
+        if ($long)
+            $paginatorRowsSelector = new PaginatorRowsSelectorComponent([100]);
         $paginatorRowsSelector->valueSelected = $params->showing;
         $content->paginatorRowsSelector($paginatorRowsSelector);
 
@@ -103,10 +109,10 @@ class GradoController extends Controller
         $page->modals([$cautionModal]);
 
         /* Lógica del controller */
-        
+
         $query = static::doSearch($sqlColumns, $params->search, $params->showing, $params->applied_filters);
 
-        if ($params->page > $query->lastPage()){
+        if ($params->page > $query->lastPage()) {
             $params->page = 1;
             $query = static::doSearch($sqlColumns, $params->search, $params->showing, $params->applied_filters);
         }
@@ -118,24 +124,28 @@ class GradoController extends Controller
 
         $filterConfig = new FilterConfig();
         $filterConfig->filters = [
-            "ID", "Grado", "Nivel Educativo"
+            "ID",
+            "Grado",
+            "Nivel Educativo"
         ];
         $filterConfig->filterOptions = [
             "Nivel Educativo" => $nivelesExistentes
         ];
         $content->filterConfig = $filterConfig;
-        
+
         $table = new TableComponent();
         $table->columns = ["ID", "Grado", "Nivel Educativo"];
         $table->rows = [];
 
-        foreach ($query as $grado){
-            array_push($table->rows,
-            [
-                $grado->id_grado,
-                $grado->nombre_grado,
-                $grado->niveleducativo->descripcion
-            ]); 
+        foreach ($query as $grado) {
+            array_push(
+                $table->rows,
+                [
+                    $grado->id_grado,
+                    $grado->nombre_grado,
+                    $grado->niveleducativo->descripcion
+                ]
+            );
         }
         $table->actions = [
             new TableAction('edit', 'grado_edit', $resource),
@@ -153,25 +163,28 @@ class GradoController extends Controller
         return $page->render();
     }
 
-    public function viewAll(Request $request){
+    public function viewAll(Request $request)
+    {
         return static::index($request, true);
     }
 
     public function fallback(Request $request)
     {
-        $sqlColumns = ["id_grado","id_nivel","nombre_grado"];
+        $sqlColumns = ["id_grado", "id_nivel", "nombre_grado"];
         $tipoDeRecurso = "academica";
 
         $pagination = $request->input('showing', 10);
         $paginaActual = $request->input('page', 1);
         $search = $request->input('search');
 
-        if (!is_numeric($paginaActual) || $paginaActual <= 0) $paginaActual = 1;
-        if (!is_numeric($pagination) || $pagination <= 0) $pagination = 10;
+        if (!is_numeric($paginaActual) || $paginaActual <= 0)
+            $paginaActual = 1;
+        if (!is_numeric($pagination) || $pagination <= 0)
+            $pagination = 10;
 
         $grados = GradoController::doSearch($sqlColumns, $search, $pagination);
 
-        if ($paginaActual > $grados->lastPage()){
+        if ($paginaActual > $grados->lastPage()) {
             $paginaActual = 1;
             $request['page'] = $paginaActual;
             $grados = GradoController::doSearch($sqlColumns, $search, $pagination);
@@ -196,31 +209,33 @@ class GradoController extends Controller
             'show_route' => 'grado_view_details'
         ];
 
-        if ($request->input("created", false)){
+        if ($request->input("created", false)) {
             $data['created'] = $request->input('created');
         }
 
-        if ($request->input("edited", false)){
+        if ($request->input("edited", false)) {
             $data['edited'] = $request->input('edited');
         }
 
-        if ($request->input("abort", false)){
+        if ($request->input("abort", false)) {
             $data['abort'] = $request->input('abort');
         }
 
-        if ($request->input("deleted", false)){
+        if ($request->input("deleted", false)) {
             $data['deleted'] = $request->input('deleted');
         }
 
-        foreach ($grados as $itemgrado){
-            array_push($data['filas'],
-            [
-                $itemgrado->id_grado,
-                $itemgrado->nombre_grado,
-                $itemgrado->nivelEducativo->descripcion
-            ]); 
+        foreach ($grados as $itemgrado) {
+            array_push(
+                $data['filas'],
+                [
+                    $itemgrado->id_grado,
+                    $itemgrado->nombre_grado,
+                    $itemgrado->nivelEducativo->descripcion
+                ]
+            );
         }
-         
+
         return view('gestiones.grado.index', compact('data'));
 
     }
@@ -239,13 +254,14 @@ class GradoController extends Controller
         return view('gestiones.grado.create', compact('data'));
     }
 
-    
-    public function createNewEntry(Request $request){
+
+    public function createNewEntry(Request $request)
+    {
 
         $request->validate([
-            'nombre_del_grado'=>'required|string|max:50|unique:grados,nombre_grado',
-            'nivel_educativo'=> 'required|integer|exists:niveles_educativos,id_nivel',
-        ],[
+            'nombre_del_grado' => 'required|string|max:50|unique:grados,nombre_grado',
+            'nivel_educativo' => 'required|integer|exists:niveles_educativos,id_nivel',
+        ], [
             'nombre_del_grado.required' => 'El nombre del grado es obligatorio.',
             'nombre_del_grado.unique' => 'Ya existe un grado con ese nombre.',
             'nombre_del_grado.max' => 'Maximo num de caracteres: 50',
@@ -283,7 +299,7 @@ class GradoController extends Controller
 
         $grado = Grado::findOrFail($id);
         $niveles = NivelEducativo::where("estado", "=", "1")->get();
-        
+
         $data = [
             'return' => route('grado_view', ['abort' => true]),
             'id' => $id,
@@ -293,7 +309,7 @@ class GradoController extends Controller
                 'nombre_del_grado' => $grado->nombre_grado
             ]
         ];
-        
+
         return view('gestiones.grado.edit', compact('data'));
     }
 
@@ -308,15 +324,17 @@ class GradoController extends Controller
         }
         $request->validate([
             'nombre_del_grado' => [
-                'required','string','max:50',
-                function($attribute, $value, $fail) use ($request, $id){
+                'required',
+                'string',
+                'max:50',
+                function ($attribute, $value, $fail) use ($request, $id) {
                     $exists = Grado::where('id_nivel', $request->nivel_educativo)
-                    ->where('nombre_grado', $value)
-                    ->where(
-                        function($query) use ($id){
-                            $query->where('id_grado', '!=', $id);
-                        }
-                    )->exists();
+                        ->where('nombre_grado', $value)
+                        ->where(
+                            function ($query) use ($id) {
+                                $query->where('id_grado', '!=', $id);
+                            }
+                        )->exists();
                     if ($exists) {
                         $fail('Ya existe un grado con este nombre en el nivel seleccionado.');
                     }
@@ -363,7 +381,7 @@ class GradoController extends Controller
         $grado = Grado::with('nivelEducativo')->findOrFail($id);
 
         $cursosQuery = $grado->cursos()
-            ->where('cursos.estado', 1) 
+            ->where('cursos.estado', 1)
             ->wherePivot('año_escolar', $anio)
             ->paginate($cursoPagination, ['*'], 'curso_page', $cursoPage);
 
@@ -388,9 +406,8 @@ class GradoController extends Controller
         ));
     }
 
-    public function export(Request $request)
+    public function export(Request $request, IExportRequestFactory $requestFactory, IExporterService $exporterService)
     {
-        $format = $request->input('export', 'excel');
         $sqlColumns = ['id_alumno', 'codigo_educando', 'dni', 'apellido_paterno', 'apellido_materno', 'primer_nombre', 'otros_nombres', 'sexo'];
 
         $params = RequestHelper::extractSearchParams($request);
@@ -398,78 +415,23 @@ class GradoController extends Controller
         // Para ambos formatos, obtener todos los registros (sin paginación)
         $query = static::doSearch($sqlColumns, $params->search, null, $params->applied_filters);
 
-        if ($format === 'excel') {
-            return $this->exportExcel($query);
-        } elseif ($format === 'pdf') {
-            return $this->exportPdf($query);
-        }
-
-        return abort(400, 'Formato no válido');
-    }
-
-private function exportExcel($grados)
-{
-    $headers = ['ID', 'Grado', 'Nivel Educativo'];
-    $fileName = 'grados_' . date('Y-m-d_H-i-s') . '.xlsx';
-    $title = 'Grados';
-    $subject = 'Exportación de Grados';
-    $description = 'Listado de grados del sistema';
-
-    return ExcelExportHelper::exportExcel(
-        $fileName,
-        $headers,
-        $grados,
-        function($sheet, $row, $grado) {
-            $sheet->setCellValue('A' . $row, $grado->id_grado);
-            $sheet->setCellValue('B' . $row, $grado->nombre_grado);
-            $sheet->setCellValue('C' . $row, $grado->nivelEducativo->descripcion ?? '');
-        },
-        $title,
-        $subject,
-        $description
-    );
-}
-
-private function exportPdf($grados)
-{
-    try {
-        if ($grados instanceof \Illuminate\Database\Eloquent\Collection) {
-            $data = $grados;
-        } elseif ($grados instanceof \Illuminate\Pagination\LengthAwarePaginator) {
-            $data = collect($grados->items());
-        } else {
-            $data = collect($grados);
-        }
-
-        if ($data->isEmpty()) {
-            return response()->json(['error' => 'No hay datos para exportar'], 400);
-        }
-
-        $fileName = 'grados_' . date('Y-m-d_H-i-s') . '.pdf';
-
-        $rows = $data->map(function($grado) {
+        $data = $query->map(function ($grado) {
+            $nivelEducativo = $grado->nivelEducativo;
             return [
-                $grado->id_grado ?? 'N/A',
-                $grado->nombre_grado ?? 'N/A',
-                $grado->nivelEducativo->descripcion ?? 'N/A'
+                $nivelEducativo->nombre_nivel,
+                $grado->nombre_grado,
             ];
-        })->toArray();
+        });
 
-        $html = PDFExportHelper::generateTableHtml([
-            'title' => 'Grados',
-            'subtitle' => 'Listado de Grados',
-            'headers' => ['ID', 'Grado', 'Nivel Educativo'],
-            'rows' => $rows,
-            'footer' => 'Sistema de Gestión Académica SIGMA - Generado automáticamente',
-        ]);
+        $title = 'Listado de Grados';
+        $headers = ["Nivel Educativo", "Grado"];
+        $exportRequest = $requestFactory->create(
+            $title,
+            $headers,
+            $data->toArray(),
+            ['filename' => 'grados_' . date('d_m_Y')]
+        );
 
-        return PDFExportHelper::exportPdf($fileName, $html);
-
-    } catch (\Exception $e) {
-        return response()->json([
-            'error' => 'Error generando PDF: ' . $e->getMessage()
-        ], 500);
+        return $exporterService->exportAsResponse($request, $exportRequest);
     }
-}
-
 }

@@ -2,7 +2,13 @@
 
 namespace App\Providers;
 
+use App\Helpers\Exporter\Factories\ExporterFactory;
+use App\Helpers\Exporter\Factories\ExportRequestFactory;
+use App\Helpers\Exporter\Services\ExporterService;
 use App\Http\Controllers\AdministrativoController;
+use App\Interfaces\IExporterFactory;
+use App\Interfaces\IExporterService;
+use App\Interfaces\IExportRequestFactory;
 use App\Models\Administrativo;
 use App\Models\Alumno;
 use App\Models\Catedra;
@@ -44,7 +50,9 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        $this->app->singleton(IExporterFactory::class, ExporterFactory::class);
+        $this->app->singleton(IExportRequestFactory::class, ExportRequestFactory::class);
+        $this->app->singleton(IExporterService::class, ExporterService::class);
     }
 
     public function boot(): void
@@ -57,21 +65,22 @@ class AppServiceProvider extends ServiceProvider
 
         $this->defineResourcePermissions();
 
-        Gate::define('is-admin', function (User $user){
+        Gate::define('is-admin', function (User $user) {
             $admin = Administrativo::where('id_usuario', '=', $user->id_usuario)->get();
             return count($admin) == 1;
         });
 
-        Gate::define('access-resource', function (User $user, $resource){
+        Gate::define('access-resource', function (User $user, $resource) {
             return $this->hasResourcePermissions($user, $resource);
         });
 
-        Gate::define('manage-resource', function (User $user, $resource, $action = 'view'){
+        Gate::define('manage-resource', function (User $user, $resource, $action = 'view') {
             return $this->hasResourcePermissions($user, $resource, $action);
         });
     }
 
-    private function registerObservers(){
+    private function registerObservers()
+    {
         Administrativo::observe(AdministrativoObserver::class);
         Alumno::observe(AlumnoObserver::class);
         Catedra::observe(CatedraObserver::class);
@@ -138,55 +147,59 @@ class AppServiceProvider extends ServiceProvider
                 'delete' => ['Director'],
                 'download' => ['Director'],
             ]
-        ]]);
+        ]);
 
-        config(['familiar-permissions' => [
-            'datos' => [
-                'view' => ['Familiar'],
-            ],
-            'matriculas' => [
-                'view' => ['Familiar'],
-            ],
-            'pagos' => [
-                'view' => ['Familiar'],
-                'create' => ['Familiar'],
-            ],
-            'academica' => [
-                'view' => ['Familiar'],
-            ],
-            'alumnos' => [
-                'view' => ['Familiar'],
-            ],
-            'personal' => [
-                'view' => ['Familiar'],
-            ],
-            'administrativa' => [
-                'view' => ['Familiar'],
-            ],
-            'financiera' => [
-                'view' => ['Familiar'],
-                'create' => ['Familiar'],
-                'view_details' => ['Familiar'],
-            ],
-            'reportes' => [
-                'view' => ['Familiar'],
-            ],
-            'orden_pago' => [
-                'view' => ['Familiar'],
-                'create' => ['Familiar'],
-            ],
-        ]]);
+        config([
+            'familiar-permissions' => [
+                'datos' => [
+                    'view' => ['Familiar'],
+                ],
+                'matriculas' => [
+                    'view' => ['Familiar'],
+                ],
+                'pagos' => [
+                    'view' => ['Familiar'],
+                    'create' => ['Familiar'],
+                ],
+                'academica' => [
+                    'view' => ['Familiar'],
+                ],
+                'alumnos' => [
+                    'view' => ['Familiar'],
+                ],
+                'personal' => [
+                    'view' => ['Familiar'],
+                ],
+                'administrativa' => [
+                    'view' => ['Familiar'],
+                ],
+                'financiera' => [
+                    'view' => ['Familiar'],
+                    'create' => ['Familiar'],
+                    'view_details' => ['Familiar'],
+                ],
+                'reportes' => [
+                    'view' => ['Familiar'],
+                ],
+                'orden_pago' => [
+                    'view' => ['Familiar'],
+                    'create' => ['Familiar'],
+                ],
+            ]
+        ]);
     }
 
-    private function hasResourcePermissions(User $user, string $resource, string $action = 'view' ){
-        if ($user->tipo == 'Administrativo'){
+    private function hasResourcePermissions(User $user, string $resource, string $action = 'view')
+    {
+        if ($user->tipo == 'Administrativo') {
             $permissions = config('permissions');
             $query = Administrativo::where('id_usuario', '=', $user->id_usuario)->get();
-            if ($query->count() == 0) return false;
+            if ($query->count() == 0)
+                return false;
             $adminAccount = $query[0];
 
             return in_array($adminAccount->cargo, $permissions[$resource][$action]);
-        } else if ($user->tipo == 'Familiar'){
+        } else if ($user->tipo == 'Familiar') {
             $permissions = config('familiar-permissions');
 
             return in_array('Familiar', $permissions[$resource][$action]);

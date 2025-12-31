@@ -26,3 +26,10 @@ Route::group(
         Route::delete('/', [DocenteController::class, 'delete'])->name('delete');
     }
 );
+
+Route::group(['middleware' => ['can:manage-resource,"personal","download"']], function () {
+    Route::get('/export', [DocenteController::class, 'export'])
+        ->name('export');
+
+    Route::redirect('/mas/export', '/docentes/export');
+});
