@@ -99,56 +99,53 @@ class AppServiceProvider extends ServiceProvider
         User::observe(UserObserver::class);
     }
 
-    private function defineResourcePermissions()
-    {
-        config([
-            'permissions' => [
-                'academica' => [
-                    'view' => ['Director'],
-                    'create' => ['Director'],
-                    'edit' => ['Director'],
-                    'delete' => ['Director'],
-                    'view_details' => ['Director', 'Secretaria'],
-                    'download' => ['Director'],
-                ],
-                'alumnos' => [
-                    'view' => ['Director', 'Secretaria'],
-                    'create' => ['Director', 'Secretaria'],
-                    'edit' => ['Director', 'Secretaria'],
-                    'delete' => ['Director', 'Secretaria'],
-                    'view_details' => ['Director', 'Secretaria'],
-                    'download' => ['Director', 'Secretaria'],
-                ],
-                'personal' => [
-                    'view' => ['Director', 'Secretaria'],
-                    'create' => ['Director'],
-                    'edit' => ['Director'],
-                    'delete' => ['Director'],
-                    'view_details' => ['Director', 'Secretaria'],
-                    'download' => ['Director', 'Secretaria'],
-                ],
-                'administrativa' => [
-                    'view' => ['Director'],
-                    'create' => ['Director'],
-                    'edit' => ['Director'],
-                    'delete' => ['Director'],
-                    'download' => ['Director'],
-                ],
-                'financiera' => [
-                    'view' => ['Director', 'Secretaria'],
-                    'create' => ['Director', 'Secretaria'],
-                    'edit' => ['Director'],
-                    'delete' => ['Director'],
-                    'view_details' => ['Director', 'Secretaria'],
-                    'download' => ['Director', 'Secretaria'],
-                ],
-                'reportes' => [
-                    'view' => ['Director'],
-                    'create' => ['Director'],
-                    'edit' => ['Director'],
-                    'delete' => ['Director'],
-                    'download' => ['Director'],
-                ]
+    private function defineResourcePermissions(){
+        config(['permissions' => [
+            'academica' => [
+                'view' => ['Director'],
+                'create' => ['Director'],
+                'edit' => ['Director'],
+                'delete' => ['Director'],
+                'view_details' => ['Director', 'Secretaria'],
+                'download' => ['Director'],
+            ],
+            'alumnos' => [
+                'view' => ['Director', 'Secretaria'],
+                'create' => ['Director', 'Secretaria'],
+                'edit' => ['Director', 'Secretaria'],
+                'delete' => ['Director', 'Secretaria'],
+                'view_details' => ['Director', 'Secretaria'],
+                'download' => ['Director', 'Secretaria'],
+            ],
+            'personal' => [
+                'view' => ['Director', 'Secretaria'],
+                'create' => ['Director','Secretaria'],
+                'edit' => ['Director'],
+                'delete' => ['Director'],
+                'view_details' => ['Director', 'Secretaria'],
+                'download' => ['Director', 'Secretaria'],
+            ],
+            'administrativa' => [
+                'view' => ['Director'],
+                'create' => ['Director'],
+                'edit' => ['Director'],
+                'delete' => ['Director'],
+                'download' => ['Director'],
+            ],
+            'financiera' => [
+                'view' => ['Director', 'Secretaria'],
+                'create' => ['Director', 'Secretaria'],
+                'edit' => ['Director'],
+                'delete' => ['Director'],
+                'view_details' => ['Director', 'Secretaria'],
+                'download' => ['Director', 'Secretaria'],
+            ],
+            'reportes' => [
+                'view' => ['Director'],
+                'create' => ['Director'],
+                'edit' => ['Director'],
+                'delete' => ['Director'],
+                'download' => ['Director'],
             ]
         ]);
 

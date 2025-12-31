@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PasarelaPagoController;
+use App\Http\Controllers\FamiliarAlumnoController;
 
 require __DIR__ . '/auth/routes.php';
 
@@ -30,3 +31,8 @@ Route::middleware(['auth'])->group(function(){
 
     Route::get('/tests', [\App\Http\Controllers\Tests\CRUDTestController::class, 'index']);
 });
+
+
+Route::get('/familiar/alumno/actualizar-datos', [FamiliarAlumnoController::class, 'actualizarDatos'])->name('familiar_alumno_actualizar_datos');
+Route::post('/familiar/alumno/actualizar-datos', [FamiliarAlumnoController::class, 'guardarDatos'])->name('familiar_alumno_guardar_datos');
+Route::post('/familiar/alumno/solicitar-reubicacion', [FamiliarAlumnoController::class, 'solicitarReubicacionEscala'])->name('familiar_alumno_solicitar_reubicacion');

@@ -177,6 +177,39 @@ class FamiliarMatriculasController extends Controller
 
         $header = Utils::crearHeaderConAlumnos($request);
 
+        // Si es alumno nuevo, mostrar formulario especial
+        if ($infoPrematricula['es_alumno_nuevo']) {
+            $gradosDisponibles = PromocionHelper::obtenerGradosDisponibles();
+            
+            // Obtener secciones agrupadas por grado
+            $seccionesPorGrado = Seccion::where('estado', 1)
+                ->get()
+                ->groupBy('id_grado')
+                ->map(function ($secciones) {
+                    return $secciones->map(function ($seccion) {
+                        return ['nombreSeccion' => $seccion->nombreSeccion];
+                    })->values();
+                });
+
+            $content = new ViewBasedComponent('homev2.familiares.prematricula_create_nuevo', [
+                'data' => [
+                    'return' => route('familiar_matricula_view'),
+                    'alumno' => $alumno,
+                    'info_prematricula' => $infoPrematricula,
+                    'grados_disponibles' => $gradosDisponibles,
+                    'secciones_por_grado' => $seccionesPorGrado,
+                ]
+            ]);
+
+            return CRUDTablePage::new()
+                ->title("Solicitar Prematrícula - Alumno Nuevo")
+                ->header($header)
+                ->sidebar(new FamiliarSidebarComponent())
+                ->content($content)
+                ->render();
+        }
+
+        // Alumno existente - promoción automática
         $seccionesDisponibles = Seccion::where('id_grado', $infoPrematricula['siguiente_grado']->id_grado)
             ->where('estado', 1)
             ->get();
@@ -198,7 +231,6 @@ class FamiliarMatriculasController extends Controller
             ->render();
     }
 
-
     public function store(Request $request)
     {
         $alumno = $request->session()->get('alumno');
@@ -209,12 +241,12 @@ class FamiliarMatriculasController extends Controller
 
         $infoPrematricula = PromocionHelper::obtenerInfoPrematricula($alumno->getKey());
 
-        // Validar nuevamente que puede prematricular
         if (!$infoPrematricula['puede_prematricular']) {
             return redirect()->route('familiar_matricula_view')
                 ->with('error', $infoPrematricula['mensaje_error']);
         }
 
+        // Validación (igual para ambos casos ahora)
         $request->validate([
             'id_grado' => 'required|exists:grados,id_grado',
             'nombreSeccion' => 'required|string|max:10',
@@ -224,21 +256,29 @@ class FamiliarMatriculasController extends Controller
             'nombreSeccion.required' => 'Debe seleccionar una sección.',
         ]);
 
+        // Determinar valores según tipo de alumno
+        if ($infoPrematricula['es_alumno_nuevo']) {
+            $idGrado = $request->input('id_grado');
+            $escala = $alumno->escala ?? 'A'; // Escala del alumno
+        } else {
+            $idGrado = $infoPrematricula['siguiente_grado']->id_grado;
+            $escala = $infoPrematricula['ultima_matricula']->escala ?? $alumno->escala ?? 'A';
+        }
+
+        // Verificar que la sección existe para el grado
         $seccion = Seccion::findByCompositeKeyOrFail(
             $request->input('id_grado'),
             $request->input('nombreSeccion')
         );
 
-
-
         // Crear la prematrícula
         Matricula::create([
             'id_alumno' => $alumno->getKey(),
-            'id_grado' => $infoPrematricula['siguiente_grado']->id_grado,
+            'id_grado' => $idGrado,
             'nombreSeccion' => $seccion->nombreSeccion,
             'año_escolar' => $infoPrematricula['periodo']['año_escolar'],
             'fecha_matricula' => Carbon::now(),
-            'escala' => $infoPrematricula['ultima_matricula']->escala ?? 'A',
+            'escala' => $escala,
             'tipo' => 'prematricula',
             'observaciones' => $request->input('observaciones'),
             'estado' => 1,
