@@ -17,6 +17,8 @@ use App\Helpers\Tables\SearchBoxComponent;
 use App\Helpers\Tables\TableButtonComponent;
 use App\Helpers\Tables\TableComponent;
 use App\Helpers\Tables\TablePaginator;
+use App\Interfaces\IExporterService;
+use App\Interfaces\IExportRequestFactory;
 use App\Models\Alumno;
 use App\Models\Grado;
 use App\Models\Matricula;
@@ -614,105 +616,37 @@ class MatriculaController extends Controller
     }
 
 
-    public function export(Request $request)
+    public function export(Request $request, IExportRequestFactory $requestFactory, IExporterService $exporterService)
     {
-        $format = $request->input('export', 'excel');
         $sqlColumns = ["id_matricula", "fecha_matricula", "año_escolar", "id_alumno", "id_grado", "nombreSeccion", "escala", "observaciones",];
 
         $params = RequestHelper::extractSearchParams($request);
 
-        // Para ambos formatos, obtener todos los registros (sin paginación)
-        // doSearch expects pagination number, but if we pass null it might break in MatriculaController implementation.
-        // MatriculaController::doSearch uses $query->paginate($pagination).
-        // I need to modifying doSearch to handle null pagination OR create a specific query for export.
-        // The easiest way is to modify doSearch to handle null pagination, similar to NivelEducativoController.
-
         $query = static::doSearch($sqlColumns, $params->search, null, $params->applied_filters);
 
-        if ($format === 'excel') {
-            return $this->exportExcel($query);
-        } elseif ($format === 'pdf') {
-            return $this->exportPdf($query);
-        }
+        $data = $query->map(function ($matricula) {
+            $alumno = $matricula->alumno;
+            $grado = $matricula->grado;
+            $seccion = $matricula->seccion;
 
-        return abort(400, 'Formato no válido');
-    }
+            return [
+                $matricula->año_escolar,
+                $grado->nombre_grado,
+                $seccion->nombreSeccion,
+                $alumno->apellido_paterno . " " . $alumno->apellido_materno,
+                $alumno->primer_nombre . " " . $alumno->otros_nombres,
+            ];
+        });
 
-    private function exportExcel($matriculas)
-    {
-        $headers = ['ID', 'Fecha Matricula', 'Año Escolar', 'Alumno', 'Nivel', 'Grado', 'Seccion', 'Escala', 'Observaciones'];
-        $fileName = 'matriculas_' . date('Y-m-d_H-i-s') . '.xlsx';
-        $title = 'Matrículas';
-        $subject = 'Exportación de Matrículas';
-        $description = 'Listado de matrículas del sistema';
-
-        return ExcelExportHelper::exportExcel(
-            $fileName,
-            $headers,
-            $matriculas,
-            function ($sheet, $row, $matricula) {
-                $sheet->setCellValue('A' . $row, $matricula->id_matricula);
-                $sheet->setCellValue('B' . $row, $matricula->fecha_matricula);
-                $sheet->setCellValue('C' . $row, $matricula->año_escolar);
-                $sheet->setCellValue('D' . $row, $matricula->alumno->apellido_paterno . ' ' . $matricula->alumno->apellido_materno . ' ' . $matricula->alumno->primer_nombre);
-                $sheet->setCellValue('E' . $row, $matricula->grado->nivelEducativo->nombre_nivel);
-                $sheet->setCellValue('F' . $row, $matricula->grado->nombre_grado);
-                $sheet->setCellValue('G' . $row, $matricula->nombreSeccion);
-                $sheet->setCellValue('H' . $row, $matricula->escala);
-                $sheet->setCellValue('I' . $row, $matricula->observaciones);
-            },
+        $title = 'Listado de Matrículas';
+        $headers = ["Año Escolar", "Grado", "Sección", "Apellidos", "Nombres"];
+        $exportRequest = $requestFactory->create(
             $title,
-            $subject,
-            $description
+            $headers,
+            $data->toArray(),
+            ['filename' => 'matriculas_' . date('d_m_Y')]
         );
-    }
 
-    private function exportPdf($matriculas)
-    {
-        try {
-            if ($matriculas instanceof \Illuminate\Database\Eloquent\Collection) {
-                $data = $matriculas;
-            } elseif ($matriculas instanceof \Illuminate\Pagination\LengthAwarePaginator) {
-                $data = collect($matriculas->items());
-            } else {
-                $data = collect($matriculas);
-            }
-
-            if ($data->isEmpty()) {
-                return response()->json(['error' => 'No hay datos para exportar'], 400);
-            }
-
-            $fileName = 'matriculas_' . date('Y-m-d_H-i-s') . '.pdf';
-
-            $rows = $data->map(function ($matricula) {
-                return [
-                    $matricula->id_matricula ?? 'N/A',
-                    $matricula->fecha_matricula ?? 'N/A',
-                    $matricula->año_escolar ?? 'N/A',
-                    ($matricula->alumno->apellido_paterno ?? '') . ' ' . ($matricula->alumno->primer_nombre ?? ''),
-                    $matricula->grado->nivelEducativo->nombre_nivel ?? 'N/A',
-                    $matricula->grado->nombre_grado ?? 'N/A',
-                    $matricula->nombreSeccion ?? 'N/A',
-                    $matricula->escala ?? 'N/A',
-                    $matricula->observaciones ?? ''
-                ];
-            })->toArray();
-
-            $html = PDFExportHelper::generateTableHtml([
-                'title' => 'Matrículas',
-                'subtitle' => 'Listado de Matrículas',
-                'headers' => ['ID', 'Fecha', 'Año', 'Alumno', 'Nivel', 'Grado', 'Sec', 'Esc', 'Obs'],
-                'rows' => $rows,
-                'footer' => 'Sistema de Gestión Académica SIGMA - Generado automáticamente',
-            ]);
-
-            return PDFExportHelper::exportPdf($fileName, $html);
-
-        } catch (\Exception $e) {
-            \Log::error('Error en exportPdf: ' . $e->getMessage());
-            return response()->json([
-                'error' => 'Error generando PDF: ' . $e->getMessage()
-            ], 500);
-        }
+        return $exporterService->exportAsResponse($request, $exportRequest);
     }
 }

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\FilteredSearchQuery;
+use App\Interfaces\IExporterService;
+use App\Interfaces\IExportRequestFactory;
 use App\Models\ComposicionFamiliar;
 use App\Models\Familiar;
 use DB;
@@ -30,11 +32,12 @@ use Illuminate\Validation\Rule;
 class AlumnoController extends Controller
 {
 
-    private static function doSearch($sqlColumns, $search, $maxEntriesShow, $appliedFilters = []){
+    private static function doSearch($sqlColumns, $search, $maxEntriesShow, $appliedFilters = [])
+    {
         $columnMap = [
             'ID' => 'id_alumno',
             'Código Educando' => 'codigo_educando',
-            'DNI' => 'dni',  
+            'DNI' => 'dni',
             'Apellido Paterno' => 'apellido_paterno',
             'Apellido Materno' => 'apellido_materno',
             'Primer Nombre' => 'primer_nombre',
@@ -48,8 +51,8 @@ class AlumnoController extends Controller
             'femenino' => 'F',
         ];
 
-        foreach ($appliedFilters as &$appliedFilter){
-            if ($appliedFilter["key"] == 'Sexo'){
+        foreach ($appliedFilters as &$appliedFilter) {
+            if ($appliedFilter["key"] == 'Sexo') {
                 $appliedFilter["value"] = $equiv[strtolower($appliedFilter["value"])];
                 break;
             }
@@ -59,7 +62,8 @@ class AlumnoController extends Controller
 
         FilteredSearchQuery::fromQuery($query, $sqlColumns, $search, $appliedFilters, $columnMap);
 
-        if ($maxEntriesShow == null) return $query->get();
+        if ($maxEntriesShow == null)
+            return $query->get();
 
         if ($maxEntriesShow === null) {
             return $query->get();
@@ -68,18 +72,19 @@ class AlumnoController extends Controller
             return $query->paginate($maxEntriesShow);
         }
     }
-    
-    public function index(Request $request, $long = false){
+
+    public function index(Request $request, $long = false)
+    {
         $sqlColumns = ['id_alumno', 'codigo_educando', 'dni', 'apellido_paterno', 'apellido_materno', 'primer_nombre', 'otros_nombres', 'sexo'];
         $resource = 'alumnos';
 
         $params = RequestHelper::extractSearchParams($request);
-        
+
         $page = CRUDTablePage::new()
             ->title("Alumnos")
             ->sidebar(new AdministrativoSidebarComponent())
             ->header(new AdministrativoHeaderComponent());
-        
+
         $content = CRUDTableComponent::new()
             ->title("Alumnos");
 
@@ -91,7 +96,7 @@ class AlumnoController extends Controller
         $descargaButton = new TableButtonComponent("tablesv2.buttons.download");
         $createNewEntryButton = new TableButtonComponent("tablesv2.buttons.createNewEntry", ["redirect" => "alumno_create"]);
 
-        if (!$long){
+        if (!$long) {
             $vermasButton = new TableButtonComponent("tablesv2.buttons.vermas", ["redirect" => "alumno_viewAll"]);
         } else {
             $vermasButton = new TableButtonComponent("tablesv2.buttons.vermenos", ["redirect" => "alumno_view"]);
@@ -104,7 +109,8 @@ class AlumnoController extends Controller
 
         /* Paginador */
         $paginatorRowsSelector = new PaginatorRowsSelectorComponent();
-        if ($long) $paginatorRowsSelector = new PaginatorRowsSelectorComponent([100]);
+        if ($long)
+            $paginatorRowsSelector = new PaginatorRowsSelectorComponent([100]);
         $paginatorRowsSelector->valueSelected = $params->showing;
         $content->paginatorRowsSelector($paginatorRowsSelector);
 
@@ -130,47 +136,57 @@ class AlumnoController extends Controller
         $page->modals([$cautionModal]);
 
         /* Lógica del controller */
-        
+
         $query = static::doSearch($sqlColumns, $params->search, $params->showing, $params->applied_filters);
 
-        if ($params->page > $query->lastPage()){
+        if ($params->page > $query->lastPage()) {
             $params->page = 1;
             $query = static::doSearch($sqlColumns, $params->search, $params->showing, $params->applied_filters);
         }
 
         $filterConfig = new FilterConfig();
         $filterConfig->filters = [
-            "ID", "Código Educando", "DNI", "Apellido Paterno", "Apellido Materno", "Primer Nombre", "Otros Nombres", "Sexo"
+            "ID",
+            "Código Educando",
+            "DNI",
+            "Apellido Paterno",
+            "Apellido Materno",
+            "Primer Nombre",
+            "Otros Nombres",
+            "Sexo"
         ];
         $filterConfig->filterOptions = [
             "Sexo" => ["Masculino", "Femenino"]
         ];
         $content->filterConfig = $filterConfig;
-        
+
         $table = new TableComponent();
         $table->columns = ["ID", "Código Educando", "DNI", "Apellidos", "Nombres", "Sexo"];
         $table->rows = [];
 
-        foreach ($query as $alumno){
-            array_push($table->rows,
-            [
-                $alumno->id_alumno,
-                $alumno->codigo_educando,
-                $alumno->dni,
-                $alumno->apellido_paterno . " " . $alumno->apellido_materno,
-                $alumno->primer_nombre . " " . $alumno->otros_nombres,
-                $alumno->sexo,
-            ]); 
+        foreach ($query as $alumno) {
+            array_push(
+                $table->rows,
+                [
+                    $alumno->id_alumno,
+                    $alumno->codigo_educando,
+                    $alumno->dni,
+                    $alumno->apellido_paterno . " " . $alumno->apellido_materno,
+                    $alumno->primer_nombre . " " . $alumno->otros_nombres,
+                    $alumno->sexo,
+                ]
+            );
         }
         $table->actions = [
             new TableAction('edit', 'alumno_edit', $resource),
             new TableAction('delete', '', $resource),
         ];
 
-        $paginator = new TablePaginator($params->page, $query->lastPage(), ['search' => $params->search,
-        'showing' => $params->showing,
-        'applied_filters' => $params->applied_filters
-    ]);
+        $paginator = new TablePaginator($params->page, $query->lastPage(), [
+            'search' => $params->search,
+            'showing' => $params->showing,
+            'applied_filters' => $params->applied_filters
+        ]);
         $table->paginator = $paginator;
 
         $content->tableComponent($table);
@@ -180,12 +196,14 @@ class AlumnoController extends Controller
         return $page->render();
     }
 
-    public function viewAll(Request $request){
+    public function viewAll(Request $request)
+    {
         return static::index($request, true);
     }
 
 
-    private static function fallbackDoSearch($sqlColumns, $search, $maxEntriesShow) {
+    private static function fallbackDoSearch($sqlColumns, $search, $maxEntriesShow)
+    {
         if (!isset($search)) {
             $query = Alumno::where('estado', '=', '1')->paginate($maxEntriesShow);
         } else {
@@ -197,16 +215,19 @@ class AlumnoController extends Controller
         return $query;
     }
 
-    public function fallback(Request $request) {
-        $sqlColumns = ['id_alumno','codigo_educando', 'dni', 'apellido_paterno', 'apellido_materno', 'primer_nombre', 'otros_nombres', 'sexo'];
+    public function fallback(Request $request)
+    {
+        $sqlColumns = ['id_alumno', 'codigo_educando', 'dni', 'apellido_paterno', 'apellido_materno', 'primer_nombre', 'otros_nombres', 'sexo'];
         $resource = 'alumnos';
 
         $maxEntriesShow = $request->input('showing', 10);
         $paginaActual = $request->input('page', 1);
         $search = $request->input('search');
 
-        if (!is_numeric($paginaActual) || $paginaActual <= 0) $paginaActual = 1;
-        if (!is_numeric($maxEntriesShow) || $maxEntriesShow <= 0) $maxEntriesShow = 10;
+        if (!is_numeric($paginaActual) || $paginaActual <= 0)
+            $paginaActual = 1;
+        if (!is_numeric($maxEntriesShow) || $maxEntriesShow <= 0)
+            $maxEntriesShow = 10;
 
         $query = AlumnoController::fallbackDoSearch($sqlColumns, $search, $maxEntriesShow);
 
@@ -257,7 +278,7 @@ class AlumnoController extends Controller
 
         foreach ($query as $alumno) {
             $apellidos = trim($alumno->apellido_paterno . ' ' . $alumno->apellido_materno);
-            $nombres = trim($alumno->primer_nombre. ' '.$alumno->otros_nombres);
+            $nombres = trim($alumno->primer_nombre . ' ' . $alumno->otros_nombres);
             array_push($data['filas'], [
                 $alumno->id_alumno,
                 $alumno->codigo_educando,
@@ -271,7 +292,8 @@ class AlumnoController extends Controller
         return view('gestiones.alumno.index', compact('data'));
     }
 
-    public function create(Request $request) {
+    public function create(Request $request)
+    {
 
         $sessionData = session('temp_student_data');
         $hasSessionData = !empty($sessionData);
@@ -309,7 +331,7 @@ class AlumnoController extends Controller
             ['id' => 'Yanesha', 'descripcion' => 'Yánesha'],
             ['id' => 'Otro', 'descripcion' => 'Otro']
         ];
-        
+
         $ubigeo = json_decode(file_get_contents(resource_path('data/ubigeo_peru.json')), true);
         $paises = $ubigeo['paises'];
         $departamentos = $ubigeo['departamentos'];
@@ -332,8 +354,9 @@ class AlumnoController extends Controller
         return view('gestiones.alumno.create', compact('data'));
     }
 
-    public function createNewEntry(Request $request) {
-        $request -> validate([
+    public function createNewEntry(Request $request)
+    {
+        $request->validate([
             'código_modular' => 'required|string|max:20',
             'código_educando' => 'required|string|max:20',
             'año_de_ingreso' => 'required|integer|min:1900|max:2100',
@@ -506,13 +529,13 @@ class AlumnoController extends Controller
         // Si va a definir familiares, guardar en sesión y redirigir
         if ($request->input('definir_familiares') == '1') {
             session(['temp_student_data' => $studentData]);
-            
+
             // Redirigir a la nueva ruta que maneja sesión
             return redirect()->route('alumno_add_familiares_session');
         }
 
 
-        $alumno  = new Alumno([
+        $alumno = new Alumno([
             'codigo_modular' => $codigoModular,
             'codigo_educando' => $codigoEducando,
             'año_ingreso' => $añoIngreso,
@@ -560,21 +583,21 @@ class AlumnoController extends Controller
     {
         // Verificar que hay datos en sesión
         $studentData = session('temp_student_data');
-        
+
         if (!$studentData) {
             return redirect()->route('alumno_create')
                 ->with('error', 'No se encontraron datos del estudiante. Por favor, complete el formulario nuevamente.');
         }
 
-        $familiares = Familiar::where('estado','=',1)->get();
+        $familiares = Familiar::where('estado', '=', 1)->get();
         $familiares_limpios = [];
-                
-        foreach($familiares as $fam) {
+
+        foreach ($familiares as $fam) {
             $familiares_limpios[] = [
                 'id' => $fam->idFamiliar,
                 'nombre_completo' => $fam->apellido_paterno . ' ' . $fam->apellido_materno . ' ' . $fam->primer_nombre . ' ' . $fam->otros_nombres
             ];
-        }               
+        }
 
         $data = [
             'return' => route('alumno_create'), // Siempre regresa al create
@@ -591,7 +614,7 @@ class AlumnoController extends Controller
                 'otros_nombres' => $studentData['otros_nombres'],
             ]
         ];
-                
+
         return view('gestiones.alumno.add_familiares', compact('data'));
     }
 
@@ -599,7 +622,7 @@ class AlumnoController extends Controller
     public function guardarFamiliaresSession(Request $request)
     {
         $studentData = session('temp_student_data');
-        
+
         if (!$studentData) {
             return redirect()->route('alumno_create')
                 ->with('error', 'Sesión expirada. Por favor, complete el formulario nuevamente.');
@@ -607,7 +630,7 @@ class AlumnoController extends Controller
 
         // Usar transacción para crear alumno y familiar juntos
         DB::beginTransaction();
-        
+
         try {
             // 1. Crear el alumno
             $alumno = new Alumno([
@@ -645,13 +668,13 @@ class AlumnoController extends Controller
                 'situacion_vivienda' => $studentData['situación_de_vivienda'],
                 'escala' => $studentData['escala']
             ]);
-            
+
             $alumno->save();
 
             // 2. Crear/asignar familiar
             if ($request->modo_familiar === 'asignar') {
                 $this->validacionesSoloParaAsignar($request, $alumno->id_alumno);
-                
+
                 ComposicionFamiliar::create([
                     'id_alumno' => $alumno->id_alumno,
                     'id_familiar' => $request->familiar_existente,
@@ -659,10 +682,10 @@ class AlumnoController extends Controller
                 ]);
             } else {
                 $this->validacionesParaCrearAsignar($request);
-                
+
                 $familiarController = new FamiliarController();
                 $familiar = $familiarController->createNewEntry($request, true);
-                
+
                 ComposicionFamiliar::create([
                     'id_alumno' => $alumno->id_alumno,
                     'id_familiar' => $familiar->idFamiliar,
@@ -671,31 +694,32 @@ class AlumnoController extends Controller
             }
 
             DB::commit();
-            
+
             // Limpiar sesión después del éxito
             session()->forget('temp_student_data');
-            
+
             return redirect()->route('alumno_view', ['created' => true]);
-            
+
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             return redirect()->back()
                 ->with('error', 'Error al crear el estudiante y familiar. Por favor, intente nuevamente.')
                 ->withInput();
         }
     }
 
-    public function add_familiares($id){
+    public function add_familiares($id)
+    {
         $alumno = Alumno::findOrFail($id);
-        $familiares = Familiar::where('estado','=',1)->get();
-        
-        foreach($familiares as $fam) {
+        $familiares = Familiar::where('estado', '=', 1)->get();
+
+        foreach ($familiares as $fam) {
             $familiares_limpios[] = [
                 'id' => $fam->idFamiliar,
                 'nombre_completo' => $fam->apellido_paterno . ' ' . $fam->apellido_materno . ' ' . $fam->primer_nombre . ' ' . $fam->otros_nombres
             ];
-        }       
+        }
         $hasSessionData = session()->has('temp_student_data');
         $returnUrl = $hasSessionData ? route('alumno_create') : route('alumno_view', ['abort' => true]);
 
@@ -714,7 +738,7 @@ class AlumnoController extends Controller
                 'otros_nombres' => $alumno->otros_nombres,
             ]
         ];
-        
+
         return view('gestiones.alumno.add_familiares', compact('data'));
     }
 
@@ -729,7 +753,7 @@ class AlumnoController extends Controller
                 Rule::unique('composiciones_familiares', 'id_familiar')
                     ->where(function ($query) use ($idAlumno, $request) {
                         return $query->where('id_alumno', $idAlumno)
-                                    ->where('id_familiar', $request->familiar_existente);
+                            ->where('id_familiar', $request->familiar_existente);
                     }),
             ],
             'parentesco_del_familiar' => 'required|string|max:50'
@@ -742,23 +766,24 @@ class AlumnoController extends Controller
     }
 
 
-    protected function validacionesParaCrearAsignar(Request $request){
+    protected function validacionesParaCrearAsignar(Request $request)
+    {
         $request->validate([
-                'dni' => 'required|string|max:20',
-                'apellido_paterno' => 'required|string|max:50',
-                'apellido_materno' => 'required|string|max:50',
-                'primer_nombre' => 'required|string|max:50',
-                'otros_nombres' => 'nullable|string|max:100',
-                'parentesco' => 'required',
-                'numero_contacto' => 'nullable|string|max:20',
-                'correo_electronico' => 'nullable|email|max:100',
-            ], [
-                'dni.required' => 'Ingrese un DNI válido.',
-                'apellido_paterno.required' => 'Ingrese el apellido paterno.',
-                'apellido_materno.required' => 'Ingrese el apellido materno.',
-                'primer_nombre.required' => 'Ingrese el primer nombre.',
-                'parentesco.required' => 'Ingrese el parentesco.'
-            ]);
+            'dni' => 'required|string|max:20',
+            'apellido_paterno' => 'required|string|max:50',
+            'apellido_materno' => 'required|string|max:50',
+            'primer_nombre' => 'required|string|max:50',
+            'otros_nombres' => 'nullable|string|max:100',
+            'parentesco' => 'required',
+            'numero_contacto' => 'nullable|string|max:20',
+            'correo_electronico' => 'nullable|email|max:100',
+        ], [
+            'dni.required' => 'Ingrese un DNI válido.',
+            'apellido_paterno.required' => 'Ingrese el apellido paterno.',
+            'apellido_materno.required' => 'Ingrese el apellido materno.',
+            'primer_nombre.required' => 'Ingrese el primer nombre.',
+            'parentesco.required' => 'Ingrese el parentesco.'
+        ]);
     }
 
 
@@ -791,7 +816,7 @@ class AlumnoController extends Controller
         }
 
         session()->forget('temp_student_data');
-        
+
 
         return redirect()->route('alumno_view', ['edited' => true]);
     }
@@ -800,7 +825,8 @@ class AlumnoController extends Controller
 
 
 
-    public function edit(Request $request, $id) {
+    public function edit(Request $request, $id)
+    {
         if (!isset($id)) {
             return redirect(route('alumno_view'));
         }
@@ -845,7 +871,7 @@ class AlumnoController extends Controller
         $departamentos = $ubigeo['departamentos'];
         $provincias = $ubigeo['provincias'];
         $distritos = $ubigeo['distritos'];
-        
+
 
         $requested = Alumno::findOrFail($id);
 
@@ -899,12 +925,13 @@ class AlumnoController extends Controller
         return view('gestiones.alumno.edit', compact('data'));
     }
 
-    public function editEntry(Request $request, $id) {
+    public function editEntry(Request $request, $id)
+    {
         if (!isset($id)) {
             return redirect(route('alumno_view'));
         }
 
-        $request -> validate([
+        $request->validate([
             'codigo_modular' => 'required|string|max:20',
             'codigo_educando' => 'required|string|max:20',
             'año_de_ingreso' => 'required|integer|min:1900|max:2100',
@@ -1026,11 +1053,11 @@ class AlumnoController extends Controller
             $newColegioProcedencia = $request->input('colegio_de_procedencia', '');
             $newDireccion = $request->input('direccion');
             $newTelefono = $request->input('telefono', '');
-            $newMedioTransporte = 	$request->input('medio_de_transporte');
-            $newTiempoDemora = 	$request->input('tiempo_de_demora', '');
-            $newMaterialVivienda = 	$request->input('material_vivienda');
-            $newEnergiaElectrica = 	$request->input('energia_electrica');
-            $newAguaPotable = 	$request->input('agua_potable', '');
+            $newMedioTransporte = $request->input('medio_de_transporte');
+            $newTiempoDemora = $request->input('tiempo_de_demora', '');
+            $newMaterialVivienda = $request->input('material_vivienda');
+            $newEnergiaElectrica = $request->input('energia_electrica');
+            $newAguaPotable = $request->input('agua_potable', '');
             $newDesague = $request->input('desague', '');
             $newSs_hh = $request->input('s_s__h_h', '');
             $newNumHabitaciones = $request->input('numero_de_habitaciones', null);
@@ -1038,7 +1065,8 @@ class AlumnoController extends Controller
             $newSituacionVivienda = $request->input('situacion_de_vivienda');
             $newEscala = $request->input('escala', null);
 
-            $requested -> update(['codigo_modular' => $newCodigoModular,
+            $requested->update([
+                'codigo_modular' => $newCodigoModular,
                 'codigo_educando' => $newCodigoEducando,
                 'año_ingreso' => $newAñoIngreso,
                 'dni' => $newDni,
@@ -1070,14 +1098,16 @@ class AlumnoController extends Controller
                 'num_habitaciones' => $newNumHabitaciones,
                 'num_habitantes' => $newNumHabitantes,
                 'situacion_vivienda' => $newSituacionVivienda,
-                'escala' => $newEscala]);
+                'escala' => $newEscala
+            ]);
         }
 
         return redirect(route('alumno_view', ['edited' => true]));
     }
 
 
-    public function delete(Request $request) {
+    public function delete(Request $request)
+    {
         $id = $request->input('id');
 
         $requested = Alumno::findOrFail($id);
@@ -1087,150 +1117,50 @@ class AlumnoController extends Controller
         return redirect(route('alumno_view', ['deleted' => true]));
     }
 
-    public function export(Request $request)
+    public function export(Request $request, IExportRequestFactory $requestFactory, IExporterService $exporterService)
     {
-        try {
-            $format = $request->input('export', 'excel');
-            
-            // Validar formato
-            if (!in_array($format, ['excel', 'pdf'])) {
-                return abort(400, 'Formato no válido');
-            }
+        $sqlColumns = [
+            'id_alumno',
+            'codigo_educando',
+            'dni',
+            'apellido_paterno',
+            'apellido_materno',
+            'primer_nombre',
+            'otros_nombres',
+            'sexo'
+        ];
 
-            $sqlColumns = [
-                'id_alumno', 
-                'codigo_educando', 
-                'dni', 
-                'apellido_paterno', 
-                'apellido_materno', 
-                'primer_nombre', 
-                'otros_nombres', 
-                'sexo'
+        $params = RequestHelper::extractSearchParams($request);
+        $query = static::doSearch($sqlColumns, $params->search, null, $params->applied_filters);
+
+        $query = $query->sortBy('apellido_paterno');
+
+        $data = $query->map(function ($alumno) {
+            $ultimaMatricula = $alumno->matriculas->last();
+            $ultimoGrado = $ultimaMatricula->grado;
+            $ultimaSeccion = $ultimaMatricula->seccion;
+            return [
+                $alumno->codigo_educando,
+                $alumno->dni,
+                $alumno->apellido_paterno . " " . $alumno->apellido_materno,
+                $alumno->primer_nombre . " " . $alumno->otros_nombres,
+                $alumno->sexo,
+                $alumno->direccion,
+                $ultimaMatricula->año_escolar,
+                $ultimoGrado->nombre_grado,
+                $ultimaSeccion->nombreSeccion,
             ];
-            
-            $params = RequestHelper::extractSearchParams($request);
-            
-            // 🔥 OBTENER TODOS LOS REGISTROS (sin paginación)
-            $query = static::doSearch($sqlColumns, $params->search, null, $params->applied_filters);
-            
-            \Log::info('Exportando alumnos', [
-                'format' => $format,
-                'total_records' => $query->count(),
-                'search' => $params->search,
-                'filters' => $params->applied_filters
-            ]);
+        });
 
-            if ($format === 'excel') {
-                return $this->exportExcel($query);
-            } elseif ($format === 'pdf') {
-                return $this->exportPdf($query);
-            }
+        $title = 'Listado de Alumnos';
+        $headers = ["Cod. Edu.", "DNI", "Apellidos", "Nombres", "Sexo", "Dirección", "Año Escolar", "Grado", "Sección"];
+        $exportRequest = $requestFactory->create(
+            $title,
+            $headers,
+            $data->toArray(),
+            ['filename' => 'alumnos_' . date('d_m_Y')]
+        );
 
-            return abort(400, 'Formato no válido');
-
-        } catch (\Exception $e) {
-            \Log::error('Error en exportación de alumnos: ' . $e->getMessage(), [
-                'format' => $request->input('export'),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            return response()->json([
-                'error' => 'Error durante la exportación: ' . $e->getMessage()
-            ], 500);
-        }
+        return $exporterService->exportAsResponse($request, $exportRequest);
     }
-
-    private function exportExcel($alumnos)
-    {
-        try {
-            \Log::info('Iniciando exportación Excel de alumnos', [
-                'data_type' => get_class($alumnos),
-                'count' => $alumnos->count()
-            ]);
-
-            $headers = ['ID', 'Código Educando', 'DNI', 'Apellidos', 'Nombres', 'Sexo'];
-            $fileName = 'alumnos_' . date('Y-m-d_H-i-s') . '.xlsx';
-            $title = 'Alumnos';
-            $subject = 'Exportación de Alumnos';
-            $description = 'Listado de alumnos del sistema';
-
-            return ExcelExportHelper::exportExcel(
-                $fileName,
-                $headers,
-                $alumnos,
-                function($sheet, $row, $alumno) {
-                    $sheet->setCellValue('A' . $row, $alumno->id_alumno ?? 'N/A');
-                    $sheet->setCellValue('B' . $row, $alumno->codigo_educando ?? 'N/A');
-                    $sheet->setCellValue('C' . $row, $alumno->dni ?? 'N/A');
-                    $sheet->setCellValue('D' . $row, trim(($alumno->apellido_paterno ?? '') . ' ' . ($alumno->apellido_materno ?? '')));
-                    $sheet->setCellValue('E' . $row, trim(($alumno->primer_nombre ?? '') . ' ' . ($alumno->otros_nombres ?? '')));
-                    $sheet->setCellValue('F' . $row, $alumno->sexo ?? 'N/A');
-                },
-                $title,
-                $subject,
-                $description
-            );
-
-        } catch (\Exception $e) {
-            \Log::error('Error en exportExcel de alumnos', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            throw $e;
-        }
-    }
-
-    private function exportPdf($alumnos)
-    {
-        try {
-            \Log::info('Iniciando exportación PDF de alumnos', [
-                'data_type' => get_class($alumnos),
-                'count' => $alumnos->count()
-            ]);
-
-            // Como doSearch ahora devuelve Collection cuando maxEntriesShow es null
-            $data = $alumnos;
-
-            if ($data->isEmpty()) {
-                \Log::warning('No hay alumnos para exportar');
-                return response()->json(['error' => 'No hay datos para exportar'], 400);
-            }
-
-            $fileName = 'alumnos_' . date('Y-m-d_H-i-s') . '.pdf';
-            
-            $rows = $data->map(function($alumno) {
-                return [
-                    $alumno->id_alumno ?? 'N/A',
-                    $alumno->codigo_educando ?? 'N/A',
-                    $alumno->dni ?? 'N/A',
-                    trim(($alumno->apellido_paterno ?? '') . ' ' . ($alumno->apellido_materno ?? '')),
-                    trim(($alumno->primer_nombre ?? '') . ' ' . ($alumno->otros_nombres ?? '')),
-                    $alumno->sexo ?? 'N/A'
-                ];
-            })->toArray();
-
-            \Log::info('Filas preparadas para PDF de alumnos', ['total_rows' => count($rows)]);
-
-            $html = PDFExportHelper::generateTableHtml([
-                'title' => 'Alumnos',
-                'subtitle' => 'Listado de Alumnos',
-                'headers' => ['ID', 'Código Educando', 'DNI', 'Apellidos', 'Nombres', 'Sexo'],
-                'rows' => $rows,
-                'footer' => 'Sistema de Gestión Académica SIGMA - Generado automáticamente',
-            ]);
-
-            return PDFExportHelper::exportPdf($fileName, $html);
-
-        } catch (\Exception $e) {
-            \Log::error('Error en exportPdf de alumnos', [
-                'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine()
-            ]);
-            
-            throw $e;
-        }
-    }
-
 }

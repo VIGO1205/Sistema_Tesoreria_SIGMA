@@ -6,6 +6,8 @@ use App\Helpers\ExcelExportHelper;
 use App\Helpers\PDFExportHelper;
 use App\Helpers\RequestHelper;
 use App\Helpers\TableAction;
+use App\Interfaces\IExporterService;
+use App\Interfaces\IExportRequestFactory;
 use App\Models\Catedra;
 use App\Models\Curso;
 use App\Models\Grado;
@@ -17,26 +19,27 @@ use Illuminate\Validation\Rule;
 
 class CatedraController extends Controller
 {
-    
-    private static function doSearch($sqlColumns, $search, $pagination, $appliedFilters = []){
-        
+
+    private static function doSearch($sqlColumns, $search, $pagination, $appliedFilters = [])
+    {
+
         $query = Catedra::where('estado', '=', '1')
-        ->whereHas('personal', fn($q) => $q->where('estado', 1))
-        ->whereHas('curso', fn($q) => $q->where('estado', 1))
-        ->whereHas('grado', fn($q) => $q->where('estado', 1))
-            ->whereExists(function($sub){
-            $sub->select(\DB::raw(1))
-                ->from('secciones')
-                ->whereColumn('secciones.id_grado', 'catedras.id_grado')
-                ->whereColumn('secciones.nombreSeccion', 'catedras.secciones_nombreSeccion')
-                ->where('secciones.estado', 1);
-        });
-        
+            ->whereHas('personal', fn($q) => $q->where('estado', 1))
+            ->whereHas('curso', fn($q) => $q->where('estado', 1))
+            ->whereHas('grado', fn($q) => $q->where('estado', 1))
+            ->whereExists(function ($sub) {
+                $sub->select(\DB::raw(1))
+                    ->from('secciones')
+                    ->whereColumn('secciones.id_grado', 'catedras.id_grado')
+                    ->whereColumn('secciones.nombreSeccion', 'catedras.secciones_nombreSeccion')
+                    ->where('secciones.estado', 1);
+            });
+
         if (isset($search)) {
             $query->where(function ($q) use ($search) {
                 // Buscar en columnas propias
                 $q->where('id_catedra', 'LIKE', "%{$search}%")
-                ->orWhere('año_escolar', 'LIKE', "%{$search}%");
+                    ->orWhere('año_escolar', 'LIKE', "%{$search}%");
 
                 // Buscar en la relación Personal
                 $q->orWhereHas('personal', function ($sub) use ($search) {
@@ -84,9 +87,9 @@ class CatedraController extends Controller
                 $query->whereHas('personal', function ($q) use ($value) {
                     $q->where(function ($q2) use ($value) {
                         $q2->where('apellido_paterno', 'LIKE', "%{$value}%")
-                        ->orWhere('apellido_materno', 'LIKE', "%{$value}%")
-                        ->orWhere('primer_nombre', 'LIKE', "%{$value}%")
-                        ->orWhere('otros_nombres', 'LIKE', "%{$value}%");
+                            ->orWhere('apellido_materno', 'LIKE', "%{$value}%")
+                            ->orWhere('primer_nombre', 'LIKE', "%{$value}%")
+                            ->orWhere('otros_nombres', 'LIKE', "%{$value}%");
                     });
                 });
             } elseif ($dbColumn === 'curso') {
@@ -125,34 +128,36 @@ class CatedraController extends Controller
 
     public function index(Request $request)
     {
-        $sqlColumns = ["id_catedra","año_escolar","id_personal","id_curso","id_grado","secciones_nombreSeccion"];
+        $sqlColumns = ["id_catedra", "año_escolar", "id_personal", "id_curso", "id_grado", "secciones_nombreSeccion"];
         $tipoDeRecurso = "academica";
 
         $pagination = $request->input('showing', 10);
         $paginaActual = $request->input('page', 1);
         $search = $request->input('search');
 
-         $appliedFilters = json_decode($request->input('applied_filters', '[]'), true) ?? [];
+        $appliedFilters = json_decode($request->input('applied_filters', '[]'), true) ?? [];
 
-        if (!is_numeric($paginaActual) || $paginaActual <= 0) $paginaActual = 1;
-        if (!is_numeric($pagination) || $pagination <= 0) $pagination = 10;
+        if (!is_numeric($paginaActual) || $paginaActual <= 0)
+            $paginaActual = 1;
+        if (!is_numeric($pagination) || $pagination <= 0)
+            $pagination = 10;
 
         $query = CatedraController::doSearch($sqlColumns, $search, $pagination, $appliedFilters);
 
-        if ($paginaActual > $query->lastPage()){
+        if ($paginaActual > $query->lastPage()) {
             $paginaActual = 1;
             $request['page'] = $paginaActual;
             $query = CatedraController::doSearch($sqlColumns, $search, $pagination, $appliedFilters);
         }
 
-        $cursosExistentes = Curso::where("estado",1)
-        ->pluck("nombre_curso")->unique()->values();
+        $cursosExistentes = Curso::where("estado", 1)
+            ->pluck("nombre_curso")->unique()->values();
 
-        $gradosExistentes = Grado::where("estado",1)
-        ->pluck("nombre_grado")->unique()->values();
+        $gradosExistentes = Grado::where("estado", 1)
+            ->pluck("nombre_grado")->unique()->values();
 
-        $seccionesExistentes = Seccion::where("estado",1)
-        ->pluck("nombreSeccion")->unique()->values();
+        $seccionesExistentes = Seccion::where("estado", 1)
+            ->pluck("nombreSeccion")->unique()->values();
 
         $data = [
             'titulo' => 'Catedras',
@@ -185,32 +190,34 @@ class CatedraController extends Controller
             ]
         ];
 
-        if ($request->input("created", false)){
+        if ($request->input("created", false)) {
             $data['created'] = $request->input('created');
         }
 
-        if ($request->input("edited", false)){
+        if ($request->input("edited", false)) {
             $data['edited'] = $request->input('edited');
         }
 
-        if ($request->input("abort", false)){
+        if ($request->input("abort", false)) {
             $data['abort'] = $request->input('abort');
         }
 
-        if ($request->input("deleted", false)){
+        if ($request->input("deleted", false)) {
             $data['deleted'] = $request->input('deleted');
         }
 
-        foreach ($query as $itemcatedra){
-            array_push($data['filas'],
-            [
-                $itemcatedra->id_catedra,
-                $itemcatedra->año_escolar,
-                $itemcatedra->personal->apellido_paterno . ' ' . $itemcatedra->personal->apellido_materno . ' '. $itemcatedra->personal->primer_nombre . ' '. $itemcatedra->personal->otros_nombres ,
-                $itemcatedra->curso->nombre_curso,
-                $itemcatedra->grado->nombre_grado,
-                $itemcatedra->seccion->nombreSeccion
-            ]); 
+        foreach ($query as $itemcatedra) {
+            array_push(
+                $data['filas'],
+                [
+                    $itemcatedra->id_catedra,
+                    $itemcatedra->año_escolar,
+                    $itemcatedra->personal->apellido_paterno . ' ' . $itemcatedra->personal->apellido_materno . ' ' . $itemcatedra->personal->primer_nombre . ' ' . $itemcatedra->personal->otros_nombres,
+                    $itemcatedra->curso->nombre_curso,
+                    $itemcatedra->grado->nombre_grado,
+                    $itemcatedra->seccion->nombreSeccion
+                ]
+            );
         }
 
 
@@ -225,7 +232,7 @@ class CatedraController extends Controller
     {
         $personales = Personal::where("estado", "=", "1")->get();
 
-        $resultado_personales = $personales->map(function($personal) {
+        $resultado_personales = $personales->map(function ($personal) {
             return [
                 'id' => $personal->id_personal, // o el campo de tu PK
                 'nombres' => trim(
@@ -237,9 +244,9 @@ class CatedraController extends Controller
             ];
         })->values()->toArray();
 
-        $cursos = Curso::where("estado","=","1")->get();
+        $cursos = Curso::where("estado", "=", "1")->get();
 
-        $resultados_cursos = $cursos->map(function($curso){
+        $resultados_cursos = $cursos->map(function ($curso) {
             return [
                 'id' => $curso->id_curso,
                 'nombres' => trim(
@@ -253,13 +260,13 @@ class CatedraController extends Controller
             ['id' => '2026', 'descripcion' => '2026']
         ];
 
-        
 
-        $niveles = NivelEducativo::where("estado","=","1")->get();
 
-        $grados = Grado::where("estado","=","1")->get();
+        $niveles = NivelEducativo::where("estado", "=", "1")->get();
 
-        $secciones = Seccion::where("estado","=","1")->get();
+        $grados = Grado::where("estado", "=", "1")->get();
+
+        $secciones = Seccion::where("estado", "=", "1")->get();
 
         $data = [
             'return' => route('catedra_view', ['abort' => true]),
@@ -274,7 +281,8 @@ class CatedraController extends Controller
         return view('gestiones.catedra.create', compact('data'));
     }
 
-    public function createNewEntry(Request $request){
+    public function createNewEntry(Request $request)
+    {
 
         $seccionData = $this->parseSeccionValue($request->seccion);
 
@@ -285,7 +293,7 @@ class CatedraController extends Controller
             'nivel_educativo' => 'required',
             'grado' => 'required',
             'seccion' => [
-            'required',
+                'required',
                 function ($attribute, $value, $fail) use ($request, $seccionData) {
                     $catedraExistente = Catedra::with('personal')
                         ->where('id_curso', $request->curso)
@@ -294,12 +302,12 @@ class CatedraController extends Controller
                         ->where('secciones_nombreSeccion', $seccionData['nombreSeccion'])
                         ->where('estado', '1')
                         ->first();
-                                        
+
                     if ($catedraExistente) {
-                        $docenteActual = $catedraExistente->personal->apellido_paterno . ' ' . 
-                                    $catedraExistente->personal->apellido_materno . ' ' . 
-                                    $catedraExistente->personal->primer_nombre;
-                        
+                        $docenteActual = $catedraExistente->personal->apellido_paterno . ' ' .
+                            $catedraExistente->personal->apellido_materno . ' ' .
+                            $catedraExistente->personal->primer_nombre;
+
                         $fail("Esta combinación ya está asignada al docente: {$docenteActual}");
                     }
                 },
@@ -321,7 +329,7 @@ class CatedraController extends Controller
             'id_grado' => $seccionData['id_grado'],
             'secciones_nombreSeccion' => $seccionData['nombreSeccion']
         ]);
-    
+
         return redirect(route('catedra_view', ['created' => true]));
 
     }
@@ -339,7 +347,7 @@ class CatedraController extends Controller
 
         // Separar la clave compuesta
         $parts = explode('|', $seccionValue);
-        
+
         if (count($parts) !== 2) {
             throw new \InvalidArgumentException('Formato de sección inválido. Esperado: id_grado|nombreSeccion');
         }
@@ -357,7 +365,7 @@ class CatedraController extends Controller
         }
 
         $catedra = Catedra::findOrFail($id);
-        
+
         $personal = $catedra->personal;
 
         $curso = $catedra->curso;
@@ -365,17 +373,17 @@ class CatedraController extends Controller
         $año = $catedra->año_escolar;
 
         $grado = $catedra->grado;
-        
+
         $id_grado = $catedra->seccion->id_grado;
         $nombreSeccion = $catedra->seccion->nombreSeccion;
 
         $seccion = $id_grado . '|' . $nombreSeccion;
 
         $nivel_educativo = $grado->nivelEducativo;
-        
+
         $personales = Personal::where("estado", "=", "1")->get();
 
-        $resultado_personales = $personales->map(function($personal) {
+        $resultado_personales = $personales->map(function ($personal) {
             return [
                 'id' => $personal->id_personal, // o el campo de tu PK
                 'nombres' => trim(
@@ -387,9 +395,9 @@ class CatedraController extends Controller
             ];
         })->values()->toArray();
 
-        $cursos = Curso::where("estado","=","1")->get();
+        $cursos = Curso::where("estado", "=", "1")->get();
 
-        $resultados_cursos = $cursos->map(function($curso){
+        $resultados_cursos = $cursos->map(function ($curso) {
             return [
                 'id' => $curso->id_curso,
                 'nombres' => trim(
@@ -403,13 +411,13 @@ class CatedraController extends Controller
             ['id' => '2026', 'descripcion' => '2026']
         ];
 
-        $niveles = NivelEducativo::where("estado","=","1")->get();
+        $niveles = NivelEducativo::where("estado", "=", "1")->get();
 
-        $grados = Grado::where("estado","=","1")->get();
+        $grados = Grado::where("estado", "=", "1")->get();
 
-        $secciones = Seccion::where("estado","=","1")->get();
-        
-        
+        $secciones = Seccion::where("estado", "=", "1")->get();
+
+
 
         $data = [
             'return' => route('grado_view', ['abort' => true]),
@@ -426,11 +434,11 @@ class CatedraController extends Controller
                 'año_escolar' => $año,
                 'nivel_educativo' => $nivel_educativo->id_nivel,
                 'grado' => $grado->id_grado,
-                'seccion' =>  $seccion
+                'seccion' => $seccion
             ]
         ];
-        
-        
+
+
 
         return view('gestiones.catedra.edit', compact('data'));
     }
@@ -460,7 +468,7 @@ class CatedraController extends Controller
                         ->where('id_grado', $seccionData['id_grado'])
                         ->where('secciones_nombreSeccion', $seccionData['nombreSeccion'])
                         ->exists();
-                    
+
                     if ($exists) {
                         $fail('Esta combinación de docente, curso, año escolar y sección ya existe.');
                     }
@@ -500,135 +508,50 @@ class CatedraController extends Controller
         return redirect(route('catedra_view', ['deleted' => true]));
     }
 
-    
-    public function export(Request $request)
+
+    public function export(Request $request, IExportRequestFactory $requestFactory, IExporterService $exporterService)
     {
-        $format = $request->input('export', 'excel');
-        
-        // 🔥 COLUMNAS CORRECTAS PARA CÁTEDRAS
         $sqlColumns = [
-            'id_catedra', 
-            'año_escolar', 
-            'id_personal', 
-            'id_curso', 
-            'id_grado', 
+            'id_catedra',
+            'año_escolar',
+            'id_personal',
+            'id_curso',
+            'id_grado',
             'secciones_nombreSeccion'
         ];
-        
+
         $params = RequestHelper::extractSearchParams($request);
-        
-        // 🔥 OBTENER TODOS LOS REGISTROS (sin paginación)
+
         $query = static::doSearch($sqlColumns, $params->search, null, $params->applied_filters);
-        
-        \Log::info('Exportando cátedras', [
-            'format' => $format,
-            'total_records' => $query->count(),
-            'search' => $params->search,
-            'filters' => $params->applied_filters
-        ]);
+        $query = $query->sortBy('año_escolar');
 
-        if ($format === 'excel') {
-            return $this->exportExcel($query);
-        } elseif ($format === 'pdf') {
-            return $this->exportPdf($query);
-        }
+        $data = $query->map(function ($catedra) {
+            $grado = $catedra->grado;
+            $seccion = $catedra->seccion;
+            $curso = $catedra->curso;
+            $personal = $catedra->personal;
 
-        return abort(400, 'Formato no válido');
-    }
+            return [
+                $catedra->año_escolar,
+                $grado->nombre_grado,
+                $seccion->nombreSeccion,
+                $curso->nombre_curso,
+                $personal->codigo_personal,
+                $personal->apellido_paterno . " " . $personal->apellido_materno,
+                $personal->primer_nombre . " " . $personal->otros_nombres
+            ];
+        });
 
-    // 🔥 MÉTODO EXPORT EXCEL MEJORADO
-    private function exportExcel($catedras)
-    {
-        $headers = ['ID', 'Año Escolar', 'Docente', 'Curso', 'Grado', 'Sección'];
-        $fileName = 'catedras_' . date('Y-m-d_H-i-s') . '.xlsx';
-        $title = 'Cátedras';
-        $subject = 'Exportación de Cátedras';
-        $description = 'Listado de cátedras del sistema';
-
-        return ExcelExportHelper::exportExcel(
-            $fileName,
-            $headers,
-            $catedras,
-            function($sheet, $row, $catedra) {
-                $docente = trim(
-                    ($catedra->personal?->apellido_paterno ?? '') . ' ' .
-                    ($catedra->personal?->apellido_materno ?? '') . ' ' .
-                    ($catedra->personal?->primer_nombre ?? '') . ' ' .
-                    ($catedra->personal?->otros_nombres ?? '')
-                );
-
-                $sheet->setCellValue('A' . $row, $catedra->id_catedra);
-                $sheet->setCellValue('B' . $row, $catedra->año_escolar);
-                $sheet->setCellValue('C' . $row, $docente);
-                $sheet->setCellValue('D' . $row, $catedra->curso?->nombre_curso ?? '');
-                $sheet->setCellValue('E' . $row, $catedra->grado?->nombre_grado ?? '');
-                $sheet->setCellValue('F' . $row, $catedra->seccion?->nombreSeccion ?? '');
-            },
+        $title = 'Listado de Cátedras';
+        $headers = ["Año Escolar", "Grado", "Sección", "Curso", "Código Personal", "Apellidos", "Nombres"];
+        $exportRequest = $requestFactory->create(
             $title,
-            $subject,
-            $description
+            $headers,
+            $data->toArray(),
+            ['filename' => 'catedras_' . date('d_m_Y')]
         );
+
+        return $exporterService->exportAsResponse($request, $exportRequest);
+
     }
-
-    // 🔥 MÉTODO EXPORT PDF MEJORADO
-    private function exportPdf($catedras)
-    {
-        try {
-            \Log::info('Iniciando exportación PDF de cátedras', [
-                'data_type' => get_class($catedras),
-                'count' => $catedras->count()
-            ]);
-
-            // Como ahora doSearch devuelve Collection cuando pagination es null
-            $data = $catedras;
-
-            if ($data->isEmpty()) {
-                \Log::warning('No hay cátedras para exportar');
-                return response()->json(['error' => 'No hay datos para exportar'], 400);
-            }
-
-            $fileName = 'catedras_' . date('Y-m-d_H-i-s') . '.pdf';
-            
-            $rows = $data->map(function($catedra) {
-                $docente = trim(
-                    ($catedra->personal?->apellido_paterno ?? '') . ' ' .
-                    ($catedra->personal?->apellido_materno ?? '') . ' ' .
-                    ($catedra->personal?->primer_nombre ?? '') . ' ' .
-                    ($catedra->personal?->otros_nombres ?? '')
-                );
-
-                return [
-                    $catedra->id_catedra ?? 'N/A',
-                    $catedra->año_escolar ?? 'N/A',
-                    $docente ?: 'N/A',
-                    $catedra->curso?->nombre_curso ?? 'N/A',
-                    $catedra->grado?->nombre_grado ?? 'N/A',
-                    $catedra->seccion?->nombreSeccion ?? 'N/A'
-                ];
-            })->toArray();
-
-            \Log::info('Filas preparadas para PDF', ['total_rows' => count($rows)]);
-
-            $html = PDFExportHelper::generateTableHtml([
-                'title' => 'Cátedras',
-                'subtitle' => 'Listado de Cátedras',
-                'headers' => ['ID', 'Año Escolar', 'Docente', 'Curso', 'Grado', 'Sección'],
-                'rows' => $rows,
-                'footer' => 'Sistema de Gestión Académica SIGMA - Generado automáticamente',
-            ]);
-
-            return PDFExportHelper::exportPdf($fileName, $html);
-
-        } catch (\Exception $e) {
-            \Log::error('Error en exportPdf de cátedras', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            return response()->json([
-                'error' => 'Error generando PDF de cátedras: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
 }

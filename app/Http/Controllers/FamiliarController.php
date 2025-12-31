@@ -1,6 +1,8 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Interfaces\IExporterService;
+use App\Interfaces\IExportRequestFactory;
 use App\Models\Familiar;
 use App\Models\User;
 
@@ -28,7 +30,8 @@ use App\Http\Controllers\Controller;
 class FamiliarController extends Controller
 {
 
-    private static function doSearch($sqlColumns, $search, $maxEntriesShow, $appliedFilters = []){
+    private static function doSearch($sqlColumns, $search, $maxEntriesShow, $appliedFilters = [])
+    {
         $columnMap = [
             'ID' => 'idFamiliar',
             'DNI' => 'dni',
@@ -44,22 +47,24 @@ class FamiliarController extends Controller
 
         FilteredSearchQuery::fromQuery($query, $sqlColumns, $search, $appliedFilters, $columnMap);
 
-        if ($maxEntriesShow == null) return $query->get();
+        if ($maxEntriesShow == null)
+            return $query->get();
 
         return $query->paginate($maxEntriesShow);
     }
-    
-    public function index(Request $request, $long = false){
+
+    public function index(Request $request, $long = false)
+    {
         $sqlColumns = ['idFamiliar', 'dni', 'apellido_paterno', 'apellido_materno', 'primer_nombre', 'otros_nombres', 'numero_contacto', 'correo_electronico'];
         $resource = 'alumnos';
 
         $params = RequestHelper::extractSearchParams($request);
-        
+
         $page = CRUDTablePage::new()
             ->title("Familiares")
             ->sidebar(new AdministrativoSidebarComponent())
             ->header(new AdministrativoHeaderComponent());
-        
+
         $content = CRUDTableComponent::new()
             ->title("Familiares");
 
@@ -71,7 +76,7 @@ class FamiliarController extends Controller
         $descargaButton = new TableButtonComponent("tablesv2.buttons.download");
         $createNewEntryButton = new TableButtonComponent("tablesv2.buttons.createNewEntry", ["redirect" => "familiar_create"]);
 
-        if (!$long){
+        if (!$long) {
             $vermasButton = new TableButtonComponent("tablesv2.buttons.vermas", ["redirect" => "familiar_viewAll"]);
         } else {
             $vermasButton = new TableButtonComponent("tablesv2.buttons.vermenos", ["redirect" => "familiar_view"]);
@@ -84,7 +89,8 @@ class FamiliarController extends Controller
 
         /* Paginador */
         $paginatorRowsSelector = new PaginatorRowsSelectorComponent();
-        if ($long) $paginatorRowsSelector = new PaginatorRowsSelectorComponent([100]);
+        if ($long)
+            $paginatorRowsSelector = new PaginatorRowsSelectorComponent([100]);
         $paginatorRowsSelector->valueSelected = $params->showing;
         $content->paginatorRowsSelector($paginatorRowsSelector);
 
@@ -110,35 +116,44 @@ class FamiliarController extends Controller
         $page->modals([$cautionModal]);
 
         /* Lógica del controller */
-        
+
         $query = static::doSearch($sqlColumns, $params->search, $params->showing, $params->applied_filters);
 
-        if ($params->page > $query->lastPage()){
+        if ($params->page > $query->lastPage()) {
             $params->page = 1;
             $query = static::doSearch($sqlColumns, $params->search, $params->showing, $params->applied_filters);
         }
 
         $filterConfig = new FilterConfig();
         $filterConfig->filters = [
-            "ID", "DNI", "Apellido Paterno", "Apellido Materno", "Primer Nombre", "Otros Nombres", "Número de Contacto", "Correo Electrónico"
+            "ID",
+            "DNI",
+            "Apellido Paterno",
+            "Apellido Materno",
+            "Primer Nombre",
+            "Otros Nombres",
+            "Número de Contacto",
+            "Correo Electrónico"
         ];
         $filterConfig->filterOptions = [];
         $content->filterConfig = $filterConfig;
-        
+
         $table = new TableComponent();
         $table->columns = ["ID", "DNI", "Apellidos", "Nombres", "Número de Contacto", "Correo Electrónico"];
         $table->rows = [];
 
-        foreach ($query as $familiar){
-            array_push($table->rows,
-            [
-                $familiar->idFamiliar,
-                $familiar->dni,
-                $familiar->apellido_paterno . " " . $familiar->apellido_materno,
-                $familiar->primer_nombre . " " . $familiar->otros_nombres,
-                $familiar->numero_contacto,
-                $familiar->correo_electronico,
-            ]); 
+        foreach ($query as $familiar) {
+            array_push(
+                $table->rows,
+                [
+                    $familiar->idFamiliar,
+                    $familiar->dni,
+                    $familiar->apellido_paterno . " " . $familiar->apellido_materno,
+                    $familiar->primer_nombre . " " . $familiar->otros_nombres,
+                    $familiar->numero_contacto,
+                    $familiar->correo_electronico,
+                ]
+            );
         }
         $table->actions = [
             new TableAction('edit', 'familiar_edit', $resource),
@@ -156,39 +171,44 @@ class FamiliarController extends Controller
         return $page->render();
     }
 
-    public function viewAll(Request $request){
+    public function viewAll(Request $request)
+    {
         return static::index($request, true);
     }
 
-    private static function fallbackDoSearch($sqlColumns, $search, $maxEntriesShow){
-        if (!isset($search)){
+    private static function fallbackDoSearch($sqlColumns, $search, $maxEntriesShow)
+    {
+        if (!isset($search)) {
             $query = Familiar::where('estado', '=', '1')->orderBy('apellido_paterno')
-            ->orderBy('apellido_materno')
-            ->orderBy('primer_nombre')
-            ->orderBy('otros_nombres')->paginate($maxEntriesShow);
+                ->orderBy('apellido_materno')
+                ->orderBy('primer_nombre')
+                ->orderBy('otros_nombres')->paginate($maxEntriesShow);
         } else {
             $query = Familiar::where('estado', '=', '1')
                 ->whereAny($sqlColumns, 'LIKE', "%{$search}%")
-                ->paginate($maxEntriesShow);    
+                ->paginate($maxEntriesShow);
         }
         return $query;
     }
 
 
-    public function fallback(Request $request){
-        $sqlColumns = ['idFamiliar','dni','apellido_paterno','apellido_materno', 'primer_nombre', 'otros_nombres','numero_contacto','correo_electronico'];
+    public function fallback(Request $request)
+    {
+        $sqlColumns = ['idFamiliar', 'dni', 'apellido_paterno', 'apellido_materno', 'primer_nombre', 'otros_nombres', 'numero_contacto', 'correo_electronico'];
         $resource = 'alumnos';
 
         $maxEntriesShow = $request->input('showing', 10);
         $paginaActual = $request->input('page', 1);
         $search = $request->input('search');
 
-        if (!is_numeric($paginaActual) || $paginaActual <= 0) $paginaActual = 1;
-        if (!is_numeric($maxEntriesShow) || $maxEntriesShow <= 0) $maxEntriesShow = 10;
+        if (!is_numeric($paginaActual) || $paginaActual <= 0)
+            $paginaActual = 1;
+        if (!is_numeric($maxEntriesShow) || $maxEntriesShow <= 0)
+            $maxEntriesShow = 10;
 
         $query = FamiliarController::fallbackDoSearch($sqlColumns, $search, $maxEntriesShow);
 
-        if ($paginaActual > $query->lastPage()){
+        if ($paginaActual > $query->lastPage()) {
             $paginaActual = 1;
             $request['page'] = $paginaActual;
             $query = FamiliarController::fallbackDoSearch($sqlColumns, $search, $maxEntriesShow);
@@ -217,42 +237,45 @@ class FamiliarController extends Controller
             'show_text' => 'Ver Alumnos',
         ];
 
-        if ($request->input("created", false)){
+        if ($request->input("created", false)) {
             $data['created'] = $request->input('created');
         }
 
-        if ($request->input("edited", false)){
+        if ($request->input("edited", false)) {
             $data['edited'] = $request->input('edited');
         }
 
-        if ($request->input("abort", false)){
+        if ($request->input("abort", false)) {
             $data['abort'] = $request->input('abort');
         }
 
-        if ($request->input("deleted", false)){
+        if ($request->input("deleted", false)) {
             $data['deleted'] = $request->input('deleted');
         }
 
-        foreach ($query as $familiar){
+        foreach ($query as $familiar) {
             $familiar = Familiar::findOrFail($familiar->idFamiliar);
- 
 
-            array_push($data['filas'],
-            [
-                $familiar->idFamiliar,  
-                $familiar->dni,
-                $familiar->apellido_paterno . ' ' . $familiar->apellido_materno,
-                $familiar->primer_nombre . ' ' . $familiar->otros_nombres,
-                $familiar->numero_contacto,
-                $familiar->correo_electronico,
-            ]);
+
+            array_push(
+                $data['filas'],
+                [
+                    $familiar->idFamiliar,
+                    $familiar->dni,
+                    $familiar->apellido_paterno . ' ' . $familiar->apellido_materno,
+                    $familiar->primer_nombre . ' ' . $familiar->otros_nombres,
+                    $familiar->numero_contacto,
+                    $familiar->correo_electronico,
+                ]
+            );
         }
 
         return view('gestiones.familiar.index', compact('data'));
 
     }
 
-    public function create(Request $request){
+    public function create(Request $request)
+    {
         $usuarios = User::where('estado', '=', '1');
         $alumnos = Alumno::where('estado', '=', '1');
         $data = [
@@ -266,58 +289,58 @@ class FamiliarController extends Controller
     public function createNewEntry(Request $request, $returnModel = false)
     {
         $request->validate([
-        'dni' => 'required|string|max:20',
-        'apellido_paterno' => 'required|string|max:50',
-        'apellido_materno' => 'required|string|max:50',
-        'primer_nombre' => 'required|string|max:50',
-        'otros_nombres' => 'nullable|string|max:100',
-        'numero_contacto' => 'nullable|string|max:20',
-        'correo_electronico' => 'nullable|email|max:100',
-    ], [
-        'dni.required' => 'Ingrese un DNI válido.',
-        'apellido_paterno.required' => 'Ingrese el apellido paterno.',
-        'apellido_materno.required' => 'Ingrese el apellido materno.',
-        'primer_nombre.required' => 'Ingrese el primer nombre.',
-    ]);
-
-    $id_usuario = null;
-
-    if ($request->has('crear_usuario')) {
-        $user = User::create([
-            'name' => $request->primer_nombre . ' ' . $request->apellido_paterno,
-            'username' => $request->dni, 
-            'tipo' => 'Familiar',
-            'email' => $request->correo_electronico ?? uniqid('familiar')."@mail.com",
-            'password' => bcrypt('12345678'),
+            'dni' => 'required|string|max:20',
+            'apellido_paterno' => 'required|string|max:50',
+            'apellido_materno' => 'required|string|max:50',
+            'primer_nombre' => 'required|string|max:50',
+            'otros_nombres' => 'nullable|string|max:100',
+            'numero_contacto' => 'nullable|string|max:20',
+            'correo_electronico' => 'nullable|email|max:100',
+        ], [
+            'dni.required' => 'Ingrese un DNI válido.',
+            'apellido_paterno.required' => 'Ingrese el apellido paterno.',
+            'apellido_materno.required' => 'Ingrese el apellido materno.',
+            'primer_nombre.required' => 'Ingrese el primer nombre.',
         ]);
-        $id_usuario = $user->id_usuario;
-    }
 
-    $familiar = Familiar::create($request->only([
-        'id_usuario' => $id_usuario,
-        'dni',
-        'apellido_paterno',
-        'apellido_materno',
-        'primer_nombre',
-        'otros_nombres',
-        'numero_contacto',
-        'correo_electronico',
-    ]));
+        $id_usuario = null;
 
-    // Sincroniza alumnos y parentesco si se envían
-    if ($request->has('alumnos')) {
-        $syncData = [];
-        foreach ($request->input('alumnos') as $id_alumno => $parentesco) {
-            $syncData[$id_alumno] = ['parentesco' => $parentesco];
+        if ($request->has('crear_usuario')) {
+            $user = User::create([
+                'name' => $request->primer_nombre . ' ' . $request->apellido_paterno,
+                'username' => $request->dni,
+                'tipo' => 'Familiar',
+                'email' => $request->correo_electronico ?? uniqid('familiar') . "@mail.com",
+                'password' => bcrypt('12345678'),
+            ]);
+            $id_usuario = $user->id_usuario;
         }
-        $familiar->alumnos()->sync($syncData);
-    }
 
-    if ($returnModel) {
-        return $familiar;
-    }
+        $familiar = Familiar::create($request->only([
+            'id_usuario' => $id_usuario,
+            'dni',
+            'apellido_paterno',
+            'apellido_materno',
+            'primer_nombre',
+            'otros_nombres',
+            'numero_contacto',
+            'correo_electronico',
+        ]));
 
-    return redirect(route('familiar_view', ['created' => true]));
+        // Sincroniza alumnos y parentesco si se envían
+        if ($request->has('alumnos')) {
+            $syncData = [];
+            foreach ($request->input('alumnos') as $id_alumno => $parentesco) {
+                $syncData[$id_alumno] = ['parentesco' => $parentesco];
+            }
+            $familiar->alumnos()->sync($syncData);
+        }
+
+        if ($returnModel) {
+            return $familiar;
+        }
+
+        return redirect(route('familiar_view', ['created' => true]));
 
     }
 
@@ -341,10 +364,10 @@ class FamiliarController extends Controller
     }
 
     public function editEntry(Request $request, $id)
-        {
-            if (!isset($id)) {
-                return redirect(route('familiar_view'));
-            }
+    {
+        if (!isset($id)) {
+            return redirect(route('familiar_view'));
+        }
 
 
 
@@ -372,7 +395,7 @@ class FamiliarController extends Controller
     public function delete(Request $request)
     {
         $id = $request->input('id');
-        
+
         $requested = Familiar::find($id);
 
         $requested->update(['estado' => '0']);
@@ -382,35 +405,75 @@ class FamiliarController extends Controller
 
 
     public function viewDetalles($id)
-        {
-            if (!isset($id)){
-                return redirect(route('familiar_view'));
-            }
-
-            $familiar = Familiar::with(['alumnos'])->findOrFail($id);
-
-            // Prepara los datos para la tabla de alumnos asociados
-            $titulo = "Alumnos asociados";
-            $columnas = ['ID', 'Nombres', 'Apellidos', 'DNI', 'Parentesco'];
-            $filas = [];
-            foreach($familiar->alumnos as $alumno) {
-                $filas[] = [
-                    $alumno->id_alumno,
-                    $alumno->primer_nombre . ' ' . $alumno->otros_nombres,
-                    $alumno->apellido_paterno . ' ' . $alumno->apellido_materno,
-                    $alumno->dni,
-                    $alumno->pivot->parentesco, // <-- parentesco desde la tabla pivote
-                ];
-            }
-            $resource = 'alumnos';
-            $create = null;
-            $showing = 10;
-            $paginaActual = 1;
-            $totalPaginas = 1;
-
-            return view('gestiones.familiar.detalles', compact(
-                'familiar', 'titulo', 'columnas', 'filas', 'resource', 'create', 'showing', 'paginaActual', 'totalPaginas'
-            ));
+    {
+        if (!isset($id)) {
+            return redirect(route('familiar_view'));
         }
 
+        $familiar = Familiar::with(['alumnos'])->findOrFail($id);
+
+        // Prepara los datos para la tabla de alumnos asociados
+        $titulo = "Alumnos asociados";
+        $columnas = ['ID', 'Nombres', 'Apellidos', 'DNI', 'Parentesco'];
+        $filas = [];
+        foreach ($familiar->alumnos as $alumno) {
+            $filas[] = [
+                $alumno->id_alumno,
+                $alumno->primer_nombre . ' ' . $alumno->otros_nombres,
+                $alumno->apellido_paterno . ' ' . $alumno->apellido_materno,
+                $alumno->dni,
+                $alumno->pivot->parentesco, // <-- parentesco desde la tabla pivote
+            ];
+        }
+        $resource = 'alumnos';
+        $create = null;
+        $showing = 10;
+        $paginaActual = 1;
+        $totalPaginas = 1;
+
+        return view('gestiones.familiar.detalles', compact(
+            'familiar',
+            'titulo',
+            'columnas',
+            'filas',
+            'resource',
+            'create',
+            'showing',
+            'paginaActual',
+            'totalPaginas'
+        ));
+    }
+
+    public function export(Request $request, IExportRequestFactory $requestFactory, IExporterService $exporterService)
+    {
+        $sqlColumns = ['idFamiliar', 'dni', 'apellido_paterno', 'apellido_materno', 'primer_nombre', 'otros_nombres', 'numero_contacto', 'correo_electronico'];
+
+        $params = RequestHelper::extractSearchParams($request);
+
+        $query = static::doSearch($sqlColumns, $params->search, null, $params->applied_filters);
+        $query = $query->sortBy('apellido_paterno');
+
+        $data = $query->map(function ($familiar) {
+            $alumnos_dni = $familiar->alumnos->pluck('dni')->toArray();
+            return [
+                $familiar->apellido_paterno . " " . $familiar->apellido_materno,
+                $familiar->primer_nombre . " " . $familiar->otros_nombres,
+                $familiar->dni,
+                $familiar->numero_contacto,
+                $familiar->correo_electronico,
+                join(', ', $alumnos_dni),
+            ];
+        });
+
+        $title = 'Listado de Familiares';
+        $headers = ["Apellidos", "Nombres", "DNI", "Número de Contacto", "Correo Electrónico", "Alumnos"];
+        $exportRequest = $requestFactory->create(
+            $title,
+            $headers,
+            $data->toArray(),
+            ['filename' => 'familiares_' . date('d_m_Y')]
+        );
+
+        return $exporterService->exportAsResponse($request, $exportRequest);
+    }
 }

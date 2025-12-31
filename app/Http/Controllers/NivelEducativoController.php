@@ -20,6 +20,8 @@ use App\Helpers\Tables\TableButtonComponent;
 use App\Helpers\Tables\TableComponent;
 use App\Helpers\Tables\TablePaginator;
 use App\Http\Controllers\Controller;
+use App\Interfaces\IExporterService;
+use App\Interfaces\IExportRequestFactory;
 use App\Models\Grado;
 use App\Models\NivelEducativo;
 use App\Models\Seccion;
@@ -256,7 +258,7 @@ class NivelEducativoController extends Controller
         return redirect(route('nivel_educativo_view', ['deleted' => true]));
     }
 
-    public function export(Request $request)
+    public function export(Request $request, IExportRequestFactory $requestFactory, IExporterService $exporterService)
     {
         $format = $request->input('export', 'excel');
         $sqlColumns = ['id_alumno', 'codigo_educando', 'dni', 'apellido_paterno', 'apellido_materno', 'primer_nombre', 'otros_nombres', 'sexo'];
@@ -266,95 +268,22 @@ class NivelEducativoController extends Controller
         // Para ambos formatos, obtener todos los registros (sin paginación)
         $query = static::doSearch($sqlColumns, $params->search, null, $params->applied_filters);
 
-        if ($format === 'excel') {
-            return $this->exportExcel($query);
-        } elseif ($format === 'pdf') {
-            return $this->exportPdf($query);
-        }
+        $data = $query->map(function ($nivelEducativo) {
+            return [
+                $nivelEducativo->nombre_nivel,
+                $nivelEducativo->descripcion
+            ];
+        });
 
-        return abort(400, 'Formato no válido');
-    }
-
-
-    private function exportExcel($niveles)
-    {
-        $headers = ['ID', 'Nivel', 'Descripción'];
-        $fileName = 'niveles_educativos_' . date('Y-m-d_H-i-s') . '.xlsx';
-        $title = 'Niveles Educativos';
-        $subject = 'Exportación de Niveles Educativos';
-        $description = 'Listado de niveles educativos del sistema';
-
-        return ExcelExportHelper::exportExcel(
-            $fileName,
-            $headers,
-            $niveles,
-            function ($sheet, $row, $nivel) {
-                $sheet->setCellValue('A' . $row, $nivel->id_nivel);
-                $sheet->setCellValue('B' . $row, $nivel->nombre_nivel);
-                $sheet->setCellValue('C' . $row, $nivel->descripcion);
-            },
+        $title = 'Listado de Niveles Educativos';
+        $headers = ["Nivel Educativo", "Descripción"];
+        $exportRequest = $requestFactory->create(
             $title,
-            $subject,
-            $description
+            $headers,
+            $data->toArray(),
+            ['filename' => 'niveles_educativos_' . date('d_m_Y')]
         );
-    }
 
-    private function exportPdf($niveles)
-    {
-        try {
-            \Log::info('Iniciando exportación PDF');
-            \Log::info('Tipo de datos recibidos: ' . get_class($niveles));
-
-            // 🔥 CORRECCIÓN: Simplificar manejo de datos
-            // Como ya pasamos null al doSearch, $niveles debería ser una Collection
-            if ($niveles instanceof \Illuminate\Database\Eloquent\Collection) {
-                $data = $niveles;
-                \Log::info('Collection recibida con: ' . $data->count() . ' elementos');
-            } elseif ($niveles instanceof \Illuminate\Pagination\LengthAwarePaginator) {
-                $data = collect($niveles->items());
-                \Log::info('Paginador convertido a collection: ' . $data->count() . ' elementos');
-            } else {
-                $data = collect($niveles);
-                \Log::info('Datos convertidos a collection');
-            }
-
-            if ($data->isEmpty()) {
-                \Log::warning('No hay datos para exportar');
-                return response()->json(['error' => 'No hay datos para exportar'], 400);
-            }
-
-            $fileName = 'niveles_educativos_' . date('Y-m-d_H-i-s') . '.pdf';
-
-            // 🔥 CORRECCIÓN: Usar la collection directamente
-            $rows = $data->map(function ($nivel) {
-                return [
-                    $nivel->id_nivel ?? 'N/A',
-                    $nivel->nombre_nivel ?? 'N/A',
-                    $nivel->descripcion ?? 'N/A'
-                ];
-            })->toArray();
-
-            \Log::info('Filas preparadas: ' . count($rows));
-
-            $html = PDFExportHelper::generateTableHtml([
-                'title' => 'Niveles Educativos',
-                'subtitle' => 'Listado de Niveles Educativos',
-                'headers' => ['ID', 'Nivel', 'Descripción'],
-                'rows' => $rows,
-                'footer' => 'Sistema de Gestión Académica SIGMA - Generado automáticamente',
-            ]);
-
-            \Log::info('HTML generado, longitud: ' . strlen($html));
-
-            return PDFExportHelper::exportPdf($fileName, $html);
-
-        } catch (\Exception $e) {
-            \Log::error('Error en exportPdf: ' . $e->getMessage());
-            \Log::error('Stack trace: ' . $e->getTraceAsString());
-
-            return response()->json([
-                'error' => 'Error generando PDF: ' . $e->getMessage()
-            ], 500);
-        }
+        return $exporterService->exportAsResponse($request, $exportRequest);
     }
 }

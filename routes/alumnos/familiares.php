@@ -8,7 +8,7 @@ Route::get('/', [FamiliarController::class, 'index'])
 Route::get('/mas', [FamiliarController::class, 'viewAll'])
     ->name('viewAll');
 
-Route::group(['middleware' => ['can:manage-resource,"alumnos","create"']], function(){
+Route::group(['middleware' => ['can:manage-resource,"alumnos","create"']], function () {
     Route::get('/crear', [FamiliarController::class, 'create'])
         ->name('create');
 
@@ -16,7 +16,7 @@ Route::group(['middleware' => ['can:manage-resource,"alumnos","create"']], funct
         ->name('createNewEntry');
 });
 
-Route::group(['middleware' => ['can:manage-resource,"alumnos","edit"']], function(){
+Route::group(['middleware' => ['can:manage-resource,"alumnos","edit"']], function () {
     Route::get('/{id}/editar', [FamiliarController::class, 'edit'])
         ->name('edit');
 
@@ -24,19 +24,19 @@ Route::group(['middleware' => ['can:manage-resource,"alumnos","edit"']], functio
         ->name('editEntry');
 });
 
-Route::group(['middleware' => ['can:manage-resource,"alumnos","delete"']], function(){
+Route::group(['middleware' => ['can:manage-resource,"alumnos","delete"']], function () {
     Route::delete('/', [FamiliarController::class, 'delete'])
         ->name('delete');
 });
 
-Route::group(['middleware' => ['can:manage-resource,"alumnos","view_details"']], function(){
+Route::group(['middleware' => ['can:manage-resource,"alumnos","view_details"']], function () {
     Route::get('/{id}/detalles', [FamiliarController::class, 'viewDetalles'])
         ->name('detalles');
 });
 
-Route::group(['middleware' => ['can:manage-resource,"alumnos","download"']], function(){
+Route::group(['middleware' => ['can:manage-resource,"alumnos","download"']], function () {
     Route::get('/export', [FamiliarController::class, 'export'])
         ->name('export');
 
-    Route::redirect('/mas/export', '/niveles-educativos/export');
+    Route::redirect('/mas/export', '/alumnos/familiares/export');
 });
