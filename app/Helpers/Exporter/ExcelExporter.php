@@ -37,7 +37,7 @@ class ExcelExporter implements ITableExporter
     public function export(ExportRequest $request)
     {
         $adapter = new ExcelAdapter($request);
-        return Excel::download($adapter, 'table.xlsx');
+        return Excel::download($adapter, ($request->option('filename', 'table') . '.xlsx'));
     }
 
     public function exportAsResponse(ExportRequest $request)

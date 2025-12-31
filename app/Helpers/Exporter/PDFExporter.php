@@ -61,6 +61,6 @@ class PDFExporter implements ITableExporter
     public function exportAsResponse(ExportRequest $request): \Illuminate\Http\Response
     {
         $pdf = $this->export($request);
-        return $pdf->stream();
+        return $pdf->stream($request->option('filename', 'document') . '.pdf');
     }
 }

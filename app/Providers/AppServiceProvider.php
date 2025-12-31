@@ -4,8 +4,10 @@ namespace App\Providers;
 
 use App\Helpers\Exporter\Factories\ExporterFactory;
 use App\Helpers\Exporter\Factories\ExportRequestFactory;
+use App\Helpers\Exporter\Services\ExporterService;
 use App\Http\Controllers\AdministrativoController;
 use App\Interfaces\IExporterFactory;
+use App\Interfaces\IExporterService;
 use App\Interfaces\IExportRequestFactory;
 use App\Models\Administrativo;
 use App\Models\Alumno;
@@ -50,6 +52,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(IExporterFactory::class, ExporterFactory::class);
         $this->app->singleton(IExportRequestFactory::class, ExportRequestFactory::class);
+        $this->app->singleton(IExporterService::class, ExporterService::class);
     }
 
     public function boot(): void
