@@ -2,7 +2,11 @@
 
 namespace App\Providers;
 
+use App\Helpers\Exporter\Factories\ExporterFactory;
+use App\Helpers\Exporter\Factories\ExportRequestFactory;
 use App\Http\Controllers\AdministrativoController;
+use App\Interfaces\IExporterFactory;
+use App\Interfaces\IExportRequestFactory;
 use App\Models\Administrativo;
 use App\Models\Alumno;
 use App\Models\Catedra;
@@ -44,7 +48,8 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        $this->app->singleton(IExporterFactory::class, ExporterFactory::class);
+        $this->app->singleton(IExportRequestFactory::class, ExportRequestFactory::class);
     }
 
     public function boot(): void
@@ -57,21 +62,22 @@ class AppServiceProvider extends ServiceProvider
 
         $this->defineResourcePermissions();
 
-        Gate::define('is-admin', function (User $user){
+        Gate::define('is-admin', function (User $user) {
             $admin = Administrativo::where('id_usuario', '=', $user->id_usuario)->get();
             return count($admin) == 1;
         });
 
-        Gate::define('access-resource', function (User $user, $resource){
+        Gate::define('access-resource', function (User $user, $resource) {
             return $this->hasResourcePermissions($user, $resource);
         });
 
-        Gate::define('manage-resource', function (User $user, $resource, $action = 'view'){
+        Gate::define('manage-resource', function (User $user, $resource, $action = 'view') {
             return $this->hasResourcePermissions($user, $resource, $action);
         });
     }
 
-    private function registerObservers(){
+    private function registerObservers()
+    {
         Administrativo::observe(AdministrativoObserver::class);
         Alumno::observe(AlumnoObserver::class);
         Catedra::observe(CatedraObserver::class);
@@ -90,103 +96,110 @@ class AppServiceProvider extends ServiceProvider
         User::observe(UserObserver::class);
     }
 
-    private function defineResourcePermissions(){
-        config(['permissions' => [
-            'academica' => [
-                'view' => ['Director'],
-                'create' => ['Director'],
-                'edit' => ['Director'],
-                'delete' => ['Director'],
-                'view_details' => ['Director', 'Secretaria'],
-                'download' => ['Director'],
-            ],
-            'alumnos' => [
-                'view' => ['Director', 'Secretaria'],
-                'create' => ['Director', 'Secretaria'],
-                'edit' => ['Director', 'Secretaria'],
-                'delete' => ['Director', 'Secretaria'],
-                'view_details' => ['Director', 'Secretaria'],
-                'download' => ['Director', 'Secretaria'],
-            ],
-            'personal' => [
-                'view' => ['Director', 'Secretaria'],
-                'create' => ['Director'],
-                'edit' => ['Director'],
-                'delete' => ['Director'],
-                'view_details' => ['Director', 'Secretaria'],
-                'download' => ['Director', 'Secretaria'],
-            ],
-            'administrativa' => [
-                'view' => ['Director'],
-                'create' => ['Director'],
-                'edit' => ['Director'],
-                'delete' => ['Director'],
-                'download' => ['Director'],
-            ],
-            'financiera' => [
-                'view' => ['Director', 'Secretaria'],
-                'create' => ['Director', 'Secretaria'],
-                'edit' => ['Director'],
-                'delete' => ['Director'],
-                'view_details' => ['Director', 'Secretaria'],
-                'download' => ['Director', 'Secretaria'],
-            ],
-            'reportes' => [
-                'view' => ['Director'],
-                'create' => ['Director'],
-                'edit' => ['Director'],
-                'delete' => ['Director'],
-                'download' => ['Director'],
+    private function defineResourcePermissions()
+    {
+        config([
+            'permissions' => [
+                'academica' => [
+                    'view' => ['Director'],
+                    'create' => ['Director'],
+                    'edit' => ['Director'],
+                    'delete' => ['Director'],
+                    'view_details' => ['Director', 'Secretaria'],
+                    'download' => ['Director'],
+                ],
+                'alumnos' => [
+                    'view' => ['Director', 'Secretaria'],
+                    'create' => ['Director', 'Secretaria'],
+                    'edit' => ['Director', 'Secretaria'],
+                    'delete' => ['Director', 'Secretaria'],
+                    'view_details' => ['Director', 'Secretaria'],
+                    'download' => ['Director', 'Secretaria'],
+                ],
+                'personal' => [
+                    'view' => ['Director', 'Secretaria'],
+                    'create' => ['Director'],
+                    'edit' => ['Director'],
+                    'delete' => ['Director'],
+                    'view_details' => ['Director', 'Secretaria'],
+                    'download' => ['Director', 'Secretaria'],
+                ],
+                'administrativa' => [
+                    'view' => ['Director'],
+                    'create' => ['Director'],
+                    'edit' => ['Director'],
+                    'delete' => ['Director'],
+                    'download' => ['Director'],
+                ],
+                'financiera' => [
+                    'view' => ['Director', 'Secretaria'],
+                    'create' => ['Director', 'Secretaria'],
+                    'edit' => ['Director'],
+                    'delete' => ['Director'],
+                    'view_details' => ['Director', 'Secretaria'],
+                    'download' => ['Director', 'Secretaria'],
+                ],
+                'reportes' => [
+                    'view' => ['Director'],
+                    'create' => ['Director'],
+                    'edit' => ['Director'],
+                    'delete' => ['Director'],
+                    'download' => ['Director'],
+                ]
             ]
-        ]]);
+        ]);
 
-        config(['familiar-permissions' => [
-            'datos' => [
-                'view' => ['Familiar'],
-            ],
-            'matriculas' => [
-                'view' => ['Familiar'],
-            ],
-            'pagos' => [
-                'view' => ['Familiar'],
-                'create' => ['Familiar'],
-            ],
-            'academica' => [
-                'view' => ['Familiar'],
-            ],
-            'alumnos' => [
-                'view' => ['Familiar'],
-            ],
-            'personal' => [
-                'view' => ['Familiar'],
-            ],
-            'administrativa' => [
-                'view' => ['Familiar'],
-            ],
-            'financiera' => [
-                'view' => ['Familiar'],
-                'create' => ['Familiar'],
-                'view_details' => ['Familiar'],
-            ],
-            'reportes' => [
-                'view' => ['Familiar'],
-            ],
-            'orden_pago' => [
-                'view' => ['Familiar'],
-                'create' => ['Familiar'],
-            ],
-        ]]);
+        config([
+            'familiar-permissions' => [
+                'datos' => [
+                    'view' => ['Familiar'],
+                ],
+                'matriculas' => [
+                    'view' => ['Familiar'],
+                ],
+                'pagos' => [
+                    'view' => ['Familiar'],
+                    'create' => ['Familiar'],
+                ],
+                'academica' => [
+                    'view' => ['Familiar'],
+                ],
+                'alumnos' => [
+                    'view' => ['Familiar'],
+                ],
+                'personal' => [
+                    'view' => ['Familiar'],
+                ],
+                'administrativa' => [
+                    'view' => ['Familiar'],
+                ],
+                'financiera' => [
+                    'view' => ['Familiar'],
+                    'create' => ['Familiar'],
+                    'view_details' => ['Familiar'],
+                ],
+                'reportes' => [
+                    'view' => ['Familiar'],
+                ],
+                'orden_pago' => [
+                    'view' => ['Familiar'],
+                    'create' => ['Familiar'],
+                ],
+            ]
+        ]);
     }
 
-    private function hasResourcePermissions(User $user, string $resource, string $action = 'view' ){
-        if ($user->tipo == 'Administrativo'){
+    private function hasResourcePermissions(User $user, string $resource, string $action = 'view')
+    {
+        if ($user->tipo == 'Administrativo') {
             $permissions = config('permissions');
             $query = Administrativo::where('id_usuario', '=', $user->id_usuario)->get();
-            if ($query->count() == 0) return false;
+            if ($query->count() == 0)
+                return false;
             $adminAccount = $query[0];
 
             return in_array($adminAccount->cargo, $permissions[$resource][$action]);
-        } else if ($user->tipo == 'Familiar'){
+        } else if ($user->tipo == 'Familiar') {
             $permissions = config('familiar-permissions');
 
             return in_array('Familiar', $permissions[$resource][$action]);
