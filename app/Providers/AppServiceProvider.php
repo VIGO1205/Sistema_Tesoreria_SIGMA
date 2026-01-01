@@ -41,6 +41,7 @@ use App\Observers\PagoObserver;
 use App\Observers\PersonalObserver;
 use App\Observers\SeccionObserver;
 use App\Observers\UserObserver;
+use App\Services\Matricula\GeneraConstanciaMatricula;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -53,6 +54,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(IExporterFactory::class, ExporterFactory::class);
         $this->app->singleton(IExportRequestFactory::class, ExportRequestFactory::class);
         $this->app->singleton(IExporterService::class, ExporterService::class);
+        $this->app->singleton(GeneraConstanciaMatricula::class, function () {
+            return new GeneraConstanciaMatricula('constancias.matricula');
+        });
     }
 
     public function boot(): void

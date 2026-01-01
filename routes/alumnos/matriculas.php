@@ -38,4 +38,7 @@ Route::group(['middleware' => ['can:manage-resource,"alumnos","download"']], fun
         ->name('export');
 
     Route::redirect('/mas/export', '/matriculas/export');
+
+    Route::get('/constancia/{id}', [MatriculaController::class, 'generarConstancia'])
+        ->name('generar_constancia');
 });
