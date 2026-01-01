@@ -24,6 +24,7 @@ use App\Models\Grado;
 use App\Models\Matricula;
 use App\Models\NivelEducativo;
 use App\Models\Seccion;
+use App\Services\Matricula\GeneraConstanciaMatricula;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -265,6 +266,7 @@ class MatriculaController extends Controller
         }
 
         $table->actions = [
+            new TableAction("generar_constancia", "matricula_generar_constancia", $resource),
             new TableAction("edit", "matricula_edit", $resource),
             new TableAction("delete", '', $resource),
         ];
@@ -648,5 +650,10 @@ class MatriculaController extends Controller
         );
 
         return $exporterService->exportAsResponse($request, $exportRequest);
+    }
+
+    public function generarConstancia($id, GeneraConstanciaMatricula $service)
+    {
+        return $service->generarAsResponse($id);
     }
 }
