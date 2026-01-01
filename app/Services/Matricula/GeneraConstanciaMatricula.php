@@ -5,7 +5,9 @@ namespace App\Services\Matricula;
 use App\Interfaces\IGeneraConstancia;
 use App\Interfaces\IGeneraConstanciaComoResponse;
 use App\Models\Matricula;
+use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Auth;
 
 class GeneraConstanciaMatricula implements IGeneraConstancia, IGeneraConstanciaComoResponse
 {
@@ -28,15 +30,17 @@ class GeneraConstanciaMatricula implements IGeneraConstancia, IGeneraConstanciaC
         return $options;
     }
 
-    private function generarPDF(Matricula $matricula)
+    private function generarPDF(Matricula $matricula, User $operador)
     {
         $alumno = $matricula->alumno;
         $grado = $matricula->grado;
         $nivel_educativo = $grado->nivelEducativo;
 
+        $admin = $operador->administrativo;
+
         $pdf = Pdf::loadView($this->template, [
-            'operator_name' => 'nombre sds',
-            'operator_username' => 'robertoa1',
+            'operator_name' => join(' ', [$admin->apellido_paterno, $admin->primer_nombre]),
+            'operator_username' => $operador->username,
             'student_dni' => $alumno->dni,
             'student_name' => join(' ', [$alumno->apellido_paterno, $alumno->apellido_materno, $alumno->primer_nombre, $alumno->otros_nombres]),
             'year' => $matricula->año_escolar,
@@ -58,12 +62,13 @@ class GeneraConstanciaMatricula implements IGeneraConstancia, IGeneraConstanciaC
     public function generar(int $id)
     {
         $matricula = $this->obtenerMatricula($id);
+        $operador = Auth::user();
 
         if ($matricula === null) {
             abort(400, "La matrícula especificada no existe.");
         }
 
-        return $this->generarPDF($matricula);
+        return $this->generarPDF($matricula, $operador);
     }
 
     public function generarAsResponse(int $id)
