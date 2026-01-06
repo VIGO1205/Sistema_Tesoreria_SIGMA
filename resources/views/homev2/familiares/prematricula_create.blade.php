@@ -109,7 +109,7 @@
                     <span class="text-xs text-gray-500 dark:text-gray-400">Próximo Grado</span>
                     <p class="font-bold text-green-700 dark:text-green-300">
                         {{ $data['info_prematricula']['siguiente_grado']->nombre_grado }}
-                        ({{ $data['info_prematricula']['siguiente_grado']->nivelEducativo->nombre ?? '' }})
+                        ({{ $data['info_prematricula']['siguiente_grado']->nivelEducativo->nombre_nivel ?? '' }})
                     </p>
                 </div>
             </div>

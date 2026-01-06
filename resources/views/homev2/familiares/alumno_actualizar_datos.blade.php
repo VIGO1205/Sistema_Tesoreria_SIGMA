@@ -308,8 +308,17 @@
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             Archivo SISFOH <span class="text-red-500">*</span>
                         </label>
-                        <input type="file" name="archivo_sisfoh" accept=".pdf,.jpg,.jpeg,.png" required
-                            class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <div class="relative">
+                            <input type="file" name="archivo_sisfoh" id="archivo_sisfoh" accept=".pdf,.jpg,.jpeg,.png" required
+                                class="peer absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                onchange="if(this.files.length > 0) { document.getElementById('archivo_sisfoh_filename').innerText = this.files[0].name; document.getElementById('archivo_sisfoh_filename').classList.remove('text-gray-500'); document.getElementById('archivo_sisfoh_filename').classList.add('text-gray-900', 'dark:text-white'); }">
+                            <div class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-800 flex items-center justify-between peer-focus:ring-2 peer-focus:ring-blue-500 peer-focus:border-blue-500">
+                                <span id="archivo_sisfoh_filename" class="text-gray-500 dark:text-gray-400 truncate">Seleccionar archivo...</span>
+                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+                                </svg>
+                            </div>
+                        </div>
                         <p class="text-xs text-gray-500 mt-1">PDF, JPG o PNG. Máximo 5MB.</p>
                         @error('archivo_sisfoh')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                     </div>

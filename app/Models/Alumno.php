@@ -49,6 +49,7 @@ class Alumno extends Model
         'num_habitantes',
         'situacion_vivienda',
         'escala',
+        'foto',
         'estado',
     ];
 
@@ -82,6 +83,13 @@ class Alumno extends Model
     public function solicitudesTraslado()
     {
         return $this->hasMany(SolicitudTraslado::class, 'id_alumno', 'id_alumno');
+    }
+
+    public function getFotoUrlAttribute()
+    {
+        return $this->foto 
+            ? asset('storage/' . $this->foto)
+            : asset('images/default.jpg');  // Foto default en public/images/
     }
 
 }
