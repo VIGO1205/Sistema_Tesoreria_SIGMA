@@ -59,27 +59,39 @@
                 </svg>
                 Información del Alumno
             </h3>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
-                <div>
-                    <span class="text-xs text-gray-500 dark:text-gray-400">Nombre completo</span>
-                    <p class="font-medium text-gray-800 dark:text-gray-200">
-                        {{ $data['alumno']->primer_nombre }} 
-                        {{ $data['alumno']->otros_nombres }} 
-                        {{ $data['alumno']->apellido_paterno }} 
-                        {{ $data['alumno']->apellido_materno }}
-                    </p>
+            <div class="flex gap-6 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+                <!-- Foto del Alumno -->
+                <div class="flex-shrink-0">
+                    <img 
+                        src="{{ $data['alumno']->foto_url }}" 
+                        alt="Foto de {{ $data['alumno']->primer_nombre }}"
+                        class="w-24 h-24 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600"
+                    >
                 </div>
-                <div>
-                    <span class="text-xs text-gray-500 dark:text-gray-400">Código educando</span>
-                    <p class="font-medium text-gray-800 dark:text-gray-200">{{ $data['alumno']->codigo_educando }}</p>
-                </div>
-                <div>
-                    <span class="text-xs text-gray-500 dark:text-gray-400">Escala</span>
-                    <p class="font-medium text-gray-800 dark:text-gray-200">{{ $data['info_prematricula']['ultima_matricula']->escala ?? $data['alumno']->escala ?? 'A' }}</p>
-                </div>
-                <div>
-                    <span class="text-xs text-gray-500 dark:text-gray-400">Dirección</span>
-                    <p class="font-medium text-gray-800 dark:text-gray-200 text-sm">{{ $data['alumno']->direccion ?? 'No registrada' }}</p>
+                
+                <!-- Datos del Alumno -->
+                <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <span class="text-xs text-gray-500 dark:text-gray-400">Nombre completo</span>
+                        <p class="font-medium text-gray-800 dark:text-gray-200">
+                            {{ $data['alumno']->primer_nombre }} 
+                            {{ $data['alumno']->otros_nombres }} 
+                            {{ $data['alumno']->apellido_paterno }} 
+                            {{ $data['alumno']->apellido_materno }}
+                        </p>
+                    </div>
+                    <div>
+                        <span class="text-xs text-gray-500 dark:text-gray-400">Código educando</span>
+                        <p class="font-medium text-gray-800 dark:text-gray-200">{{ $data['alumno']->codigo_educando }}</p>
+                    </div>
+                    <div>
+                        <span class="text-xs text-gray-500 dark:text-gray-400">Escala</span>
+                        <p class="font-medium text-gray-800 dark:text-gray-200">{{ $data['info_prematricula']['ultima_matricula']->escala ?? $data['alumno']->escala ?? 'A' }}</p>
+                    </div>
+                    <div class="md:col-span-2">
+                        <span class="text-xs text-gray-500 dark:text-gray-400">Dirección</span>
+                        <p class="font-medium text-gray-800 dark:text-gray-200 text-sm">{{ $data['alumno']->direccion ?? 'No registrada' }}</p>
+                    </div>
                 </div>
             </div>
         </div>

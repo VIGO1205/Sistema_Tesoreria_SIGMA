@@ -89,7 +89,7 @@ class Alumno extends Model
     {
         return $this->foto 
             ? asset('storage/' . $this->foto)
-            : asset('images/default.jpg');  // Foto default en public/images/
+            : asset('storage/fotos/alumnos/default.jpg'); 
     }
 
 }

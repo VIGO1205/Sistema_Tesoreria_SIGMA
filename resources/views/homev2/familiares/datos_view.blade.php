@@ -1,21 +1,47 @@
+<div class="p-8 m-4 bg-gray-100 dark:bg-white/[0.03] rounded-2xl">
+    <!-- Header -->
+    <div class="flex pb-6 justify-between items-center border-b border-gray-200 dark:border-gray-700">
+        <div>
+            <h2 class="text-2xl font-bold dark:text-gray-200 text-gray-800">Estás viendo los datos de tu alumno</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">ID: {{ $data['id'] }}</p>
+        </div>
+        <div class="flex gap-3">
+            <a href="{{ $data['return'] }}"
+                class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-6 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+            >
+                Volver
+            </a>
+        </div>
+    </div>
 
-    <div class="p-8 m-4 bg-gray-100 dark:bg-white/[0.03] rounded-2xl">
-        <!-- Header -->
-        <div class="flex pb-6 justify-between items-center border-b border-gray-200 dark:border-gray-700">
-            <div>
-                <h2 class="text-2xl font-bold dark:text-gray-200 text-gray-800">Estás viendo los datos de tu alumno</h2>
-                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">ID: {{ $data['id'] }}</p>
-            </div>
-            <div class="flex gap-3">
-                <a href="{{ $data['return'] }}"
-                    class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-6 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+    <!-- Foto del Alumno -->
+    <div class="mt-8 mb-8">
+        <div class="flex items-center gap-6 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-6">
+            <div class="flex-shrink-0">
+                <img 
+                    src="{{ $data['foto_url'] }}" 
+                    alt="Foto del alumno"
+                    class="w-32 h-32 rounded-full object-cover border-4 border-gray-200 dark:border-gray-600"
                 >
-                    Volver
-                </a>
+            </div>
+            <div>
+                <h3 class="text-xl font-bold text-gray-800 dark:text-gray-200">
+                    {{ $data['default']['primer_nombre'] }} 
+                    {{ $data['default']['otros_nombres'] }} 
+                    {{ $data['default']['apellido_paterno'] }} 
+                    {{ $data['default']['apellido_materno'] }}
+                </h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    DNI: {{ $data['default']['d_n_i'] }}
+                </p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                    Código: {{ $data['default']['codigo_educando'] }}
+                </p>
             </div>
         </div>
+    </div>
 
-        <form method="POST" id="form" action="" class="mt-8">
+    <form method="POST" id="form" action="" class="mt-8">
             @method('PATCH')
             @csrf
             

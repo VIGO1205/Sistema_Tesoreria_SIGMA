@@ -92,6 +92,7 @@ class FamiliarAlumnoController extends Controller
         }
 
         $request->validate([
+            'foto' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'apellido_paterno' => 'required|string|max:50',
             'apellido_materno' => 'required|string|max:50',
             'primer_nombre' => 'required|string|max:50',
@@ -115,6 +116,9 @@ class FamiliarAlumnoController extends Controller
             'num_habitantes' => 'nullable|integer|min:1|max:20',
             'situacion_vivienda' => 'required|string|max:100',
         ], [
+            'foto.image' => 'El archivo debe ser una imagen.',
+            'foto.mimes' => 'La foto debe ser JPG, JPEG o PNG.',
+            'foto.max' => 'La foto no debe superar los 2MB.',
             'apellido_paterno.required' => 'El apellido paterno es obligatorio.',
             'apellido_materno.required' => 'El apellido materno es obligatorio.',
             'primer_nombre.required' => 'El primer nombre es obligatorio.',
@@ -133,7 +137,23 @@ class FamiliarAlumnoController extends Controller
 
         $alumnoModel = Alumno::find($alumno->getKey());
 
+        // Manejar la foto
+        if ($request->hasFile('foto')) {
+            // Eliminar foto anterior si existe
+            if ($alumnoModel->foto) {
+                Storage::disk('public')->delete($alumnoModel->foto);
+            }
+            
+            // Guardar nueva foto
+            $foto = $request->file('foto');
+            $nombreFoto = 'alumno_' . $alumnoModel->getKey() . '_' . time() . '.' . $foto->getClientOriginalExtension();
+            $rutaFoto = $foto->storeAs('fotos/alumnos', $nombreFoto, 'public');
+            
+            $alumnoModel->foto = $rutaFoto;
+        }
+
         $alumnoModel->update([
+            'foto' => $alumnoModel->foto,
             'apellido_paterno' => $request->input('apellido_paterno'),
             'apellido_materno' => $request->input('apellido_materno'),
             'primer_nombre' => $request->input('primer_nombre'),

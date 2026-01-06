@@ -94,7 +94,7 @@ class AlumnosSeeder extends Seeder
                                 'situacion_vivienda' => $faker->randomElement(['PROPIA', 'ALQUILADA', 'CEDIDA']),
                                 'escala' => $escala,
                                 'estado' => true,
-                                'foto' => 'fotos/alumnos/default.jpg'
+                                'foto' => null
                             ]);
 
                             $dni_familiar = $faker->unique()->numerify('########');

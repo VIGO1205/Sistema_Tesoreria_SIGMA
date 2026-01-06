@@ -18,8 +18,61 @@
         </div>
     </div>
 
-    <form method="POST" id="form-datos" action="{{ route('familiar_alumno_guardar_datos') }}" class="mt-8">
+    <form method="POST" id="form-datos" action="{{ route('familiar_alumno_guardar_datos') }}" enctype="multipart/form-data" class="mt-8">
         @csrf
+
+        <!-- Foto del Alumno -->
+        <div class="mb-8">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center">
+                <svg class="w-5 h-5 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+                Foto del Alumno
+            </h3>
+            <div class="flex items-center gap-6 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+                <!-- Foto actual -->
+                <div class="flex-shrink-0">
+                    <img 
+                        id="preview-foto"
+                        src="{{ $data['alumno']->foto_url }}" 
+                        alt="Foto de {{ $data['alumno']->primer_nombre }}"
+                        class="w-32 h-32 rounded-full object-cover border-4 border-gray-200 dark:border-gray-600"
+                    >
+                </div>
+                
+                <!-- Input para cambiar foto -->
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Cambiar Foto
+                    </label>
+                    <div class="relative">
+                        <input 
+                            type="file" 
+                            name="foto" 
+                            id="foto" 
+                            accept=".jpg,.jpeg,.png"
+                            class="peer absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                            onchange="previewImage(this)"
+                        >
+                        <div class="w-full max-w-md border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 bg-white dark:bg-gray-800 flex items-center justify-between peer-focus:ring-2 peer-focus:ring-purple-500 peer-focus:border-purple-500 hover:border-purple-400 transition-colors">
+                            <div class="flex items-center gap-3">
+                                <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                </svg>
+                                <div>
+                                    <span id="foto_filename" class="text-gray-600 dark:text-gray-400 text-sm">Seleccionar imagen...</span>
+                                    <p class="text-xs text-gray-500 mt-0.5">JPG o PNG. Máximo 2MB.</p>
+                                </div>
+                            </div>
+                            <span class="text-purple-500 text-sm font-medium">Examinar</span>
+                        </div>
+                    </div>
+                    @error('foto')
+                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+            </div>
+        </div>
 
         <!-- Información Personal -->
         <div class="mb-8">
@@ -345,6 +398,28 @@
     </div>
 </div>
 
+<script>
+        function previewImage(input) {
+            const preview = document.getElementById('preview-foto');
+            const filename = document.getElementById('foto_filename');
+            
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                }
+                
+                reader.readAsDataURL(input.files[0]);
+                
+                filename.innerText = input.files[0].name;
+                filename.classList.remove('text-gray-600');
+                filename.classList.add('text-gray-900', 'dark:text-white');
+            }
+        }
+</script>
+
 @section('custom-js')
     <script src="{{ asset('js/tables.js') }}"></script>
+    
 @endsection

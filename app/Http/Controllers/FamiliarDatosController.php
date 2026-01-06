@@ -69,6 +69,7 @@ class FamiliarDatosController extends Controller
         $data = [
             'return' => route('principal'),
             'id' => $requested->getKey(),
+            'foto_url' => $requested->foto_url,
             'sexos' => $sexos,
             'paises' => $paises,
             'provincias' => $provincias,
