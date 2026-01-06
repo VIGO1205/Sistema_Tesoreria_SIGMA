@@ -200,7 +200,7 @@ class DepartamentoAcademicoController extends Controller
         $cautionModal = CautionModalComponent::new()
             ->cautionMessage('¿Estás seguro?')
             ->action('Estás quitando al docente del departamento')
-            ->columns(['DNI', 'Nombre', 'Cargo'])
+            ->columns(['DNI', 'Nombre', 'Categoría'])
             ->rows(['', '', ''])
             ->lastWarningMessage('El docente será removido de este departamento.')
             ->confirmButton('Sí, quitar')
@@ -234,7 +234,7 @@ class DepartamentoAcademicoController extends Controller
         }
 
         $table = new TableComponent();
-        $table->columns = ["ID", "DNI", "Nombre Completo", "Cargo", "Teléfono"];
+        $table->columns = ["ID", "DNI", "Nombre Completo", "Cateegoría", "Teléfono"];
         $table->rows = [];
 
         foreach ($docentes as $docente) {
@@ -249,7 +249,7 @@ class DepartamentoAcademicoController extends Controller
                 $docente->id_personal,
                 $docente->dni,
                 $nombreCompleto,
-                $docente->cargo ?? 'Sin cargo',
+                $docente->categoria ?? 'Sin categoría',
                 $docente->telefono ?? 'Sin teléfono',
             ]);
         }
