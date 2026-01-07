@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PasarelaPagoController;
 use App\Http\Controllers\FamiliarAlumnoController;
+use App\Http\Controllers\SolicitudPrematriculaController;
 
 require __DIR__ . '/auth/routes.php';
 
@@ -36,3 +37,23 @@ Route::middleware(['auth'])->group(function(){
 Route::get('/familiar/alumno/actualizar-datos', [FamiliarAlumnoController::class, 'actualizarDatos'])->name('familiar_alumno_actualizar_datos');
 Route::post('/familiar/alumno/actualizar-datos', [FamiliarAlumnoController::class, 'guardarDatos'])->name('familiar_alumno_guardar_datos');
 Route::post('/familiar/alumno/solicitar-reubicacion', [FamiliarAlumnoController::class, 'solicitarReubicacionEscala'])->name('familiar_alumno_solicitar_reubicacion');
+
+
+Route::prefix('solicitud-prematricula')->group(function () {
+    Route::get('/', [SolicitudPrematriculaController::class, 'create'])
+        ->name('solicitud_prematricula.create');
+    Route::post('/', [SolicitudPrematriculaController::class, 'store'])
+        ->name('solicitud_prematricula.store');
+    Route::get('/exito', [SolicitudPrematriculaController::class, 'exito'])
+        ->name('solicitud_prematricula.exito');
+});
+
+// === RUTAS PARA PRE-APODERADO ===
+Route::middleware(['auth'])->group(function () {
+    Route::get('/prematricula/estado', [SolicitudPrematriculaController::class, 'estadoSolicitud'])
+        ->name('pre_apoderado.estado_solicitud');
+});
+
+Route::get('/test-solicitud', function () {
+    return 'Funciona';
+});
