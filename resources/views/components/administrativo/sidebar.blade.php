@@ -47,12 +47,15 @@
                 'Alumnos',
                 'Matrículas',
                 'Familiares',
+                'Asignar Familiar-Alumno',
                 'Generar Solicitud Traslado',
+
             ],
             'links' => [
                 'Alumnos' => 'alumno_view',
                 'Matrículas' => 'matricula_view',
                 'Familiares' => 'familiar_view',
+                'Asignar Familiar-Alumno' => 'composicion_familiar_view',
                 'Generar Solicitud Traslado' => 'traslado_view',
             ],
             'icon' => 'persona'

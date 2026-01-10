@@ -276,8 +276,8 @@ class FamiliarController extends Controller
 
     public function create(Request $request)
     {
-        $usuarios = User::where('estado', '=', '1');
-        $alumnos = Alumno::where('estado', '=', '1');
+        $usuarios = User::where('estado', '=', '1')->get();
+        $alumnos = Alumno::where('estado', '=', '1')->get();
         $data = [
             'return' => route('familiar_view', ['abort' => true]),
             'usuarios' => $usuarios,
@@ -289,6 +289,7 @@ class FamiliarController extends Controller
     public function createNewEntry(Request $request, $returnModel = false)
     {
         $request->validate([
+            'id_usuario' => 'required|exists:users,id_usuario',
             'dni' => 'required|string|max:20',
             'apellido_paterno' => 'required|string|max:50',
             'apellido_materno' => 'required|string|max:50',
@@ -297,35 +298,24 @@ class FamiliarController extends Controller
             'numero_contacto' => 'nullable|string|max:20',
             'correo_electronico' => 'nullable|email|max:100',
         ], [
+            'id_usuario.required' => 'Debe seleccionar un usuario.',
+            'id_usuario.exists' => 'El usuario seleccionado no existe.',
             'dni.required' => 'Ingrese un DNI válido.',
             'apellido_paterno.required' => 'Ingrese el apellido paterno.',
             'apellido_materno.required' => 'Ingrese el apellido materno.',
             'primer_nombre.required' => 'Ingrese el primer nombre.',
         ]);
 
-        $id_usuario = null;
-
-        if ($request->has('crear_usuario')) {
-            $user = User::create([
-                'name' => $request->primer_nombre . ' ' . $request->apellido_paterno,
-                'username' => $request->dni,
-                'tipo' => 'Familiar',
-                'email' => $request->correo_electronico ?? uniqid('familiar') . "@mail.com",
-                'password' => bcrypt('12345678'),
-            ]);
-            $id_usuario = $user->id_usuario;
-        }
-
-        $familiar = Familiar::create($request->only([
-            'id_usuario' => $id_usuario,
-            'dni',
-            'apellido_paterno',
-            'apellido_materno',
-            'primer_nombre',
-            'otros_nombres',
-            'numero_contacto',
-            'correo_electronico',
-        ]));
+        $familiar = Familiar::create([
+            'id_usuario' => $request->id_usuario,
+            'dni' => $request->dni,
+            'apellido_paterno' => $request->apellido_paterno,
+            'apellido_materno' => $request->apellido_materno,
+            'primer_nombre' => $request->primer_nombre,
+            'otros_nombres' => $request->otros_nombres,
+            'numero_contacto' => $request->numero_contacto,
+            'correo_electronico' => $request->correo_electronico,
+        ]);
 
         // Sincroniza alumnos y parentesco si se envían
         if ($request->has('alumnos')) {

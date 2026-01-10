@@ -19,4 +19,20 @@ class ComposicionFamiliar extends Model
         'parentesco',
         'estado',
     ];
+
+    /**
+     * Relación con el modelo Alumno
+     */
+    public function alumno()
+    {
+        return $this->belongsTo(Alumno::class, 'id_alumno', 'id_alumno');
+    }
+
+    /**
+     * Relación con el modelo Familiar
+     */
+    public function familiar()
+    {
+        return $this->belongsTo(Familiar::class, 'id_familiar', 'idFamiliar');
+    }
 }

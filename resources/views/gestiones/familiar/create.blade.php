@@ -29,9 +29,24 @@
       @method('PUT')
       @csrf
 
-      <div class="flex items-center gap-2">
-        <input type="checkbox" id="crear_usuario" name="crear_usuario" value="1" {{ old('crear_usuario') ? 'checked' : '' }}>
-        <label for="crear_usuario" class="text-sm text-gray-700 dark:text-gray-200">¿Desea crear una cuenta de usuario para este familiar?</label>
+      <div class="flex flex-col gap-2">
+        <label for="id_usuario" class="text-sm font-medium text-gray-700 dark:text-gray-200">Usuario <span class="text-red-500">*</span></label>
+        <select
+          id="id_usuario"
+          name="id_usuario"
+          class="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-700 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:focus:border-blue-500 dark:focus:ring-blue-500"
+          required
+        >
+          <option value="">-- Seleccione un usuario --</option>
+          @foreach($data['usuarios'] as $usuario)
+            <option value="{{ $usuario->id_usuario }}" {{ old('id_usuario') == $usuario->id_usuario ? 'selected' : '' }}>
+              {{ $usuario->username }} - {{ $usuario->name }} ({{ $usuario->tipo }})
+            </option>
+          @endforeach
+        </select>
+        @if($errors->has('id_usuario'))
+          <span class="text-sm text-red-500">{{ $errors->first('id_usuario') }}</span>
+        @endif
       </div>
 
       @include('components.forms.string', [

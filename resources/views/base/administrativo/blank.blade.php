@@ -10,7 +10,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     @vite(['resources/css/style.css', 'resources/js/index.js'])
-    
+
     <title>
       @yield('titulo', 'Página por defecto')
     </title>

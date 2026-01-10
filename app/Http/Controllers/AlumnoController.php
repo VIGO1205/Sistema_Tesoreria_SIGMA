@@ -1164,4 +1164,5 @@ class AlumnoController extends Controller
 
         return $exporterService->exportAsResponse($request, $exportRequest);
     }
+
 }

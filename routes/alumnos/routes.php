@@ -31,3 +31,11 @@ Route::group([
 ], function(){
     require __DIR__ . '/traslados.php';
 });
+
+Route::group([
+    'prefix' => 'composiciones-familiares',
+    'as' => 'composicion_familiar_',
+    'middleware' => ['can:access-resource,"alumnos"'],
+], function(){
+    require __DIR__ . '/composiciones_familiares.php';
+});
