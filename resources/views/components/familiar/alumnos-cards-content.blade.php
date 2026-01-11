@@ -239,4 +239,51 @@ function seleccionarAlumno(idAlumno) {
     form.submit();
 }
 </script>
+@else
+{{-- Tarjeta cuando no hay alumnos vinculados --}}
+<div class="container-fluid py-4">
+    <style>
+        .no-students-card {
+            max-width: 500px;
+            margin: 3rem auto;
+            border-radius: 20px;
+            overflow: hidden;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        .no-students-icon {
+            font-size: 4rem;
+            color: white;
+            margin-bottom: 1.5rem;
+        }
+
+        .no-students-title {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .no-students-message {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 0;
+        }
+    </style>
+
+    <div class="no-students-card">
+        <div class="no-students-icon">
+            <i class="fas fa-user-slash"></i>
+        </div>
+        <h3 class="no-students-title">No hay alumnos vinculados</h3>
+        <p class="no-students-message">
+            Actualmente no tienes ningún alumno asociado a tu cuenta.<br>
+            Por favor, contacta con el administrador del sistema para vincular alumnos.
+        </p>
+    </div>
+</div>
 @endif

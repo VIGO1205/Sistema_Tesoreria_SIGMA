@@ -100,6 +100,7 @@
       </button>
       <!-- Application nav menu button -->
 
+      @if($page->alumnoSeleccionado != null)
       <div class="hidden lg:block">
         <form id="seleccion-alumno" method="POST" action="{{ route('principal') }}">
           @csrf
@@ -123,6 +124,7 @@
           </div>
         </form>
       </div>
+      @endif
     </div>
 
     <div

@@ -68,11 +68,9 @@ class HomeController extends Controller {
             ->title("Selección de Alumno")
             ->header($header);
 
-        // Agregar las tarjetas de alumnos solo si hay alumnos vinculados
-        if (!empty($header->alumnos)) {
-            $cardsComponent = new AlumnosCardsComponent($header->alumnos);
-            $page->content($cardsComponent);
-        }
+        // Agregar las tarjetas siempre (mostrará mensaje si no hay alumnos)
+        $cardsComponent = new AlumnosCardsComponent($header->alumnos);
+        $page->content($cardsComponent);
 
         return $page->render();
     }
