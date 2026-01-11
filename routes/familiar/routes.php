@@ -23,3 +23,11 @@ Route::group([
 ], function(){
     require __DIR__ . '/pagos.php';
 });
+
+Route::group([
+    'prefix' => 'cambiar-password',
+    'as' => 'familiar_cambiar_password_',
+    'middleware' => ['can:access-resource,"cambiar_password"'],
+], function(){
+    require __DIR__ . '/cambiar_password.php';
+});

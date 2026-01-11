@@ -212,6 +212,10 @@ class AppServiceProvider extends ServiceProvider
                     'view' => ['Familiar'],
                     'create' => ['Familiar'],
                 ],
+                'cambiar_password' => [
+                    'view' => ['Familiar'],
+                    'edit' => ['Familiar'],
+                ],
             ]
         ]);
 
@@ -233,9 +237,19 @@ class AppServiceProvider extends ServiceProvider
                 return false;
             $adminAccount = $query[0];
 
+            // Verificar que la clave del recurso y la acción existen
+            if (!isset($permissions[$resource]) || !isset($permissions[$resource][$action])) {
+                return false;
+            }
+
             return in_array($adminAccount->cargo, $permissions[$resource][$action]);
         } else if ($user->tipo == 'Familiar') {
             $permissions = config('familiar-permissions');
+
+            // Verificar que la clave del recurso y la acción existen
+            if (!isset($permissions[$resource]) || !isset($permissions[$resource][$action])) {
+                return false;
+            }
 
             return in_array('Familiar', $permissions[$resource][$action]);
         } else if ($user->tipo == 'PreApoderado') {

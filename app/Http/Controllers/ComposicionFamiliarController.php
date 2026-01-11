@@ -93,12 +93,13 @@ class ComposicionFamiliarController extends Controller
         $cautionModal = CautionModalComponent::new()
             ->cautionMessage('¿Estás seguro?')
             ->action('Estás eliminando permanentemente esta asignación')
-            ->columns(['ID Familiar', 'ID Alumno', 'Parentesco']) // Solo 3 columnas
-            ->rows([0, 2, 4]) // Posición 0=ID Familiar, 2=ID Alumno, 4=Parentesco
+            ->columns(['ID Familiar', 'Nombre Familiar', 'ID Alumno', 'Nombre Alumno', 'Parentesco'])
+            ->rows([0, 1, 2, 3, 4])  // Índices de las columnas de la tabla (0=id_familiar, 1=nombreFamiliar, etc.)
             ->lastWarningMessage('Esta acción no se puede deshacer. La asignación será eliminada permanentemente de la base de datos.')
             ->confirmButton('Sí, eliminar')
             ->cancelButton('Cancelar')
             ->isForm(true)
+            ->dataInputName('id')
             ->build();
 
         $page->modals([$cautionModal]);

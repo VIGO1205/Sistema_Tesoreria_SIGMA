@@ -8,6 +8,8 @@ use App\Models\User;
 
 use App\Models\Alumno;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 use App\Helpers\FilteredSearchQuery;
 use App\Helpers\CRUDTablePage;
@@ -465,5 +467,75 @@ class FamiliarController extends Controller
         );
 
         return $exporterService->exportAsResponse($request, $exportRequest);
+    }
+
+    /**
+     * Mostrar el formulario para cambiar contraseña del familiar autenticado
+     */
+    public function showChangePassword(Request $request)
+    {
+        $user = Auth::user();
+
+        // Verificar que el usuario sea de tipo Familiar
+        if ($user->tipo !== 'Familiar') {
+            abort(403, 'No tienes permiso para acceder a esta página.');
+        }
+
+        // Obtener el familiar asociado al usuario logueado
+        $familiar = Familiar::where('id_usuario', $user->id_usuario)->first();
+
+        if (!$familiar) {
+            abort(404, 'No se encontró información del familiar.');
+        }
+
+        $data = [
+            'return' => route('familiar_cambiar_password_view'),
+            'username' => $user->username
+        ];
+
+        return view('gestiones.familiar.change_password', compact('data'));
+    }
+
+    /**
+     * Actualizar la contraseña del familiar autenticado
+     */
+    public function changePassword(Request $request)
+    {
+        $user = Auth::user();
+
+        // Verificar que el usuario sea de tipo Familiar
+        if ($user->tipo !== 'Familiar') {
+            abort(403, 'No tienes permiso para realizar esta acción.');
+        }
+
+        // Obtener el familiar asociado al usuario logueado
+        $familiar = Familiar::where('id_usuario', $user->id_usuario)->first();
+
+        if (!$familiar) {
+            abort(404, 'No se encontró información del familiar.');
+        }
+
+        // Validar los campos de contraseña
+        $request->validate([
+            'password' => 'required|string|min:6|confirmed'
+        ], [
+            'password.required' => 'La nueva contraseña es obligatoria.',
+            'password.min' => 'La contraseña debe tener al menos 6 caracteres.',
+            'password.confirmed' => 'Las contraseñas no coinciden.'
+        ]);
+
+        // Buscar el usuario en la tabla users usando el id_usuario del familiar
+        $userToUpdate = User::where('id_usuario', $familiar->id_usuario)->first();
+
+        if (!$userToUpdate) {
+            abort(404, 'No se encontró el usuario asociado.');
+        }
+
+        // Actualizar la contraseña
+        $userToUpdate->password = Hash::make($request->input('password'));
+        $userToUpdate->save();
+
+        return redirect()->route('familiar_cambiar_password_view')
+            ->with('success', 'Contraseña actualizada correctamente. Por favor, inicia sesión nuevamente con tu nueva contraseña.');
     }
 }

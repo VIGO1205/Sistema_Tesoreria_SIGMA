@@ -16,6 +16,19 @@
         </li>
     @endif
 
+    {{-- Gestión Tutor (Solo para Familiar) --}}
+    @can('access-resource', 'cambiar_password')
+        @include('components.para-sidebar.dropdown-button', [
+            'name' => 'Gestión Tutor',
+            'items' => [
+                'Cambiar Contraseña',
+            ],
+            'links' => [
+                'Cambiar Contraseña' => 'familiar_cambiar_password_view'
+            ],
+            'icon' => 'persona'
+        ])
+    @endcan
 
     {{-- Gestión Académica --}}
     @can('access-resource', 'academica')
