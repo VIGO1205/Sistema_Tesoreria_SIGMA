@@ -74,35 +74,41 @@
             'value' => old(Str::snake('Seguro social'))
           ])
 
-          @include('components.forms.select', [
-            'label' => 'Estado civil',
-            'error' => $errors->first(Str::snake('Estado civil')) ?? false,
-            'option_values' => ['S', 'C', 'V', 'D'],
-            'options' => ['Soltero', 'Casado', 'Viudo', 'Divorciado'],
-            'value' => old(Str::snake('Estado civil')),
-          ])
+          @include('components.forms.combo', [
+            'label' => 'Estado Civil',
+            'name' => Str::snake('Estado Civil'),
+            'error' => $errors->first(Str::snake('Estado Civil')) ?? false,
+            'value' => old(Str::snake('Estado Civil')),
+            'options' => $data['estadosciviles'],
+            'options_attributes' => ['id', 'descripcion'],
+            'disableSearch' => true
+        ])
         </div>
 
-        <div class="col-span-5 grid grid-cols-4  gap-8">
-          @include('components.forms.string', [
-            'label' => 'Dirección',
-            'error' => $errors->first(Str::snake('Dirección')) ?? false,
-            'value' => old(Str::snake('Dirección'))
-          ])
+        <div class="col-span-5 grid grid-cols-4 gap-8">
+            @include('components.forms.string', [
+                'label' => 'Dirección',
+                'name' => Str::snake('Dirección'),
+                'error' => $errors->first(Str::snake('Dirección')) ?? false,
+                'value' => old(Str::snake('Dirección'))
+            ])
 
-          @include('components.forms.date-picker', [
-            'label' => 'Fecha de Ingreso',
-            'error' => $errors->first(Str::snake('Fecha de Ingreso')) ?? false,
-            'value' => old(Str::snake('Fecha de Ingreso'))
-          ])
+            @include('components.forms.date', [
+                'label' => 'Fecha de Ingreso',
+                'name' => Str::snake('Fecha de Ingreso'),
+                'error' => $errors->first(Str::snake('Fecha de Ingreso')) ?? false,
+                'value' => old(Str::snake('Fecha de Ingreso'))
+            ])
 
-          @include('components.forms.select', [
-            'label' => 'Cargo',
-            'error' => $errors->first(Str::snake('Cargo')) ?? false,
-            'option_values' => ['Secretaria', 'Director', 'Administrador del Sistema'],
-            'options' => ['Secretaria', 'Director', 'Administrador del Sistema'],
-            'value' => old(Str::snake('Cargo')),
-          ])
+            @include('components.forms.combo', [
+                'label' => 'Cargo',
+                'name' => Str::snake('Cargo'),
+                'error' => $errors->first(Str::snake('Cargo')) ?? false,
+                'value' => old(Str::snake('Cargo')),
+                'options' => $data['cargos'],
+                'options_attributes' => ['id', 'descripcion'],
+                'disableSearch' => true
+            ])
 
           @include('components.forms.string', [
             'label' => 'Sueldo',

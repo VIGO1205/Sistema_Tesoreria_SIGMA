@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 
 
 use App\Helpers\FilteredSearchQuery;
+use App\Interfaces\IExporterService;
+use App\Interfaces\IExportRequestFactory;
 use App\Helpers\CRUDTablePage;
 use App\Helpers\ExcelExportHelper;
 use App\Helpers\PDFExportHelper;
@@ -167,10 +169,26 @@ class AdministrativoController extends Controller
     }
 
 
-    public function create(Request $request){
+    public function create(Request $request)
+    {
+        $estadosciviles = [
+            ['id' => 'C', 'descripcion' => 'Casado'],
+            ['id' => 'S', 'descripcion' => 'Soltero'],
+            ['id' => 'V', 'descripcion' => 'Viudo'],
+            ['id' => 'D', 'descripcion' => 'Divorciado']
+        ];
+
+        $cargos = [
+            ['id' => 'Director', 'descripcion' => 'Director'],
+            ['id' => 'Secretaria', 'descripcion' => 'Secretaria']
+        ];
+
         $data = [
             'return' => route('administrativo_view', ['abort' => true]),
+            'estadosciviles' => $estadosciviles,
+            'cargos' => $cargos,
         ];
+
         return view('gestiones.administrativo.create', compact('data'));
     }
 
@@ -180,7 +198,7 @@ class AdministrativoController extends Controller
             'apellido_materno' => 'required|max:50',
             'primer_nombre' => 'required|max:50',
             'otros_nombres' => 'required',
-            'd_n_i' => 'required|max:8',
+            'd_n_i' => 'required|string|max:8|unique:administrativos,dni',
             'teléfono' => 'required|max:20',
             'seguro_social' => 'required|max:20',
             'estado_civil' => 'required|max:1',
@@ -188,9 +206,12 @@ class AdministrativoController extends Controller
             'fecha_de_ingreso' => 'required|date',
             'cargo' => 'required|max:255',
             'sueldo' => 'required|numeric|max:999999999',
-            'nombre_de_usuario' => 'required|max:50',
-            'contraseña' => 'required|max:100',
+            'nombre_de_usuario' => 'required|string|max:50|unique:users,username',
+            'contraseña' => 'required|string|min:6|max:100',
         ],[
+            'd_n_i.unique' => 'El DNI ya está registrado.',
+            'nombre_de_usuario.unique' => 'El nombre de usuario ya existe.',
+            'contraseña.min' => 'La contraseña debe tener al menos 6 caracteres.',
             'apellido_paterno.required' => 'El apellido paterno es obligatorio.',
             'apellido_paterno.max' => 'El apellido paterno no puede superar los 50 caracteres.',
             'apellido_materno.required' => 'El apellido materno es obligatorio.',
@@ -267,11 +288,28 @@ class AdministrativoController extends Controller
             return redirect(route('administrativo_view'));
         }
 
+        $estadosciviles = [
+            ['id' => 'C', 'descripcion' => 'Casado'],
+            ['id' => 'S', 'descripcion' => 'Soltero'],
+            ['id' => 'V', 'descripcion' => 'Viudo'],
+            ['id' => 'D', 'descripcion' => 'Di  vorciado']
+        ];
+
+        $cargos = [
+            ['id' => 'Director', 'descripcion' => 'Director'],
+            ['id' => 'Secretaria', 'descripcion' => 'Secretaria'],
+            ['id' => 'Contador', 'descripcion' => 'Contador'],
+            ['id' => 'Coordinador', 'descripcion' => 'Coordinador'],
+            ['id' => 'Auxiliar', 'descripcion' => 'Auxiliar'],
+        ];
+
         $requested = Administrativo::findOrFail($id);
 
         $data = [
             'return' => route('administrativo_view', ['abort' => true]),
             'id' => $id,
+            'estadosciviles' => $estadosciviles,
+            'cargos' => $cargos,
             'default' => [
                 'apellido_paterno' => $requested->apellido_paterno,
                 'apellido_materno' => $requested->apellido_materno,
@@ -296,6 +334,21 @@ class AdministrativoController extends Controller
         if (!isset($id)){
             return redirect(route('administrativo_view'));
         }
+
+        $request->validate([
+            'apellido_paterno' => 'required|string|max:50',
+            'apellido_materno' => 'required|string|max:50',
+            'primer_nombre' => 'required|string|max:50',
+            'otros_nombres' => 'nullable|string|max:50',
+            'd_n_i' => 'required|string|max:8|unique:administrativos,dni,' . $id . ',id_administrativo',
+            'telefono' => 'nullable|string|max:20',
+            'seguro_social' => 'nullable|string|max:20',
+            'estado_civil' => 'required|in:S,C,V,D',
+            'direccion' => 'required|string|max:255',
+            'fecha_de_ingreso' => 'required|date',
+            'cargo' => 'required|string|max:100',
+            'sueldo' => 'required|numeric|min:0',
+        ]);
 
         $requested = Administrativo::find($id);
 
@@ -342,141 +395,35 @@ class AdministrativoController extends Controller
         return redirect(route('administrativo_view', ['deleted' => true]));
     }
 
-    public function export(Request $request)
+    public function export(Request $request, IExportRequestFactory $requestFactory, IExporterService $exporterService)
     {
-        try {
-            $format = $request->input('export', 'excel');
-            
-            
+        $sqlColumns = ['id_administrativo', 'dni', 'apellido_paterno', 'apellido_materno', 'primer_nombre', 'otros_nombres', 'cargo', 'sueldo'];
 
-            if (!in_array($format, ['excel', 'pdf'])) {
-                return abort(400, 'Formato no válido');
-            }
+        $params = RequestHelper::extractSearchParams($request);
+        $query = static::doSearch($sqlColumns, $params->search, null, $params->applied_filters);
 
-            $sqlColumns = ['id_administrativo', 'dni', 'apellido_paterno', 'apellido_materno', 'primer_nombre', 'cargo', 'sueldo'];
-            
-            $params = RequestHelper::extractSearchParams($request);
-            
-            // Obtener todos los registros (sin paginación)
-            $query = static::doSearch($sqlColumns, $params->search, null, $params->applied_filters);
-            
-            \Log::info('Exportando administrativos', [
-                'format' => $format,
-                'total_records' => $query->count(),
-                'search' => $params->search,
-                'filters' => $params->applied_filters
-            ]);
+        $data = $query->map(function ($administrativo) {
+            return [
+                $administrativo->id_administrativo,
+                $administrativo->cargo,
+                $administrativo->dni,
+                $administrativo->apellido_paterno . ' ' . $administrativo->apellido_materno,
+                $administrativo->primer_nombre . ' ' . $administrativo->otros_nombres,
+                'S/ ' . number_format($administrativo->sueldo, 2),
+            ];
+        });
 
-            if ($format === 'excel') {
-                return $this->exportExcel($query);
-            } elseif ($format === 'pdf') {
-                return $this->exportPdf($query);
-            }
+        $title = 'Listado de Administrativos';
+        $headers = ['ID', 'Cargo', 'DNI', 'Apellidos', 'Nombres', 'Sueldo'];
 
-            return abort(400, 'Formato no válido');
+        $exportRequest = $requestFactory->create(
+            $title,
+            $headers,
+            $data->toArray(),
+            ['filename' => 'administrativos_' . date('d_m_Y')]
+        );
 
-        } catch (\Exception $e) {
-            \Log::error('Error en exportación de administrativos: ' . $e->getMessage(), [
-                'format' => $request->input('export'),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            return response()->json([
-                'error' => 'Error durante la exportación: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    private function exportExcel($administrativos)
-    {
-        try {
-            \Log::info('Iniciando exportación Excel de administrativos', [
-                'data_type' => get_class($administrativos),
-                'count' => $administrativos->count()
-            ]);
-
-            $headers = ['ID', 'Cargo', 'DNI', 'Apellidos', 'Nombres', 'Sueldo'];
-            $fileName = 'administrativos_' . date('Y-m-d_H-i-s') . '.xlsx';
-            $title = 'Administrativos';
-            $subject = 'Exportación de Administrativos';
-            $description = 'Listado de administrativos del sistema';
-
-            return ExcelExportHelper::exportExcel(
-                $fileName,
-                $headers,
-                $administrativos,
-                function($sheet, $row, $administrativo) {
-                    $sheet->setCellValue('A' . $row, $administrativo->id_administrativo ?? 'N/A');
-                    $sheet->setCellValue('B' . $row, $administrativo->cargo ?? 'N/A');
-                    $sheet->setCellValue('C' . $row, $administrativo->dni ?? 'N/A');
-                    $sheet->setCellValue('D' . $row, trim(($administrativo->apellido_paterno ?? '')));
-                    $sheet->setCellValue('E' . $row, trim(($administrativo->primer_nombre ?? '')));
-                    $sheet->setCellValue('F' . $row, $administrativo->sueldo ?? 'N/A');
-                },
-                $title,
-                $subject,
-                $description
-            );
-
-        } catch (\Exception $e) {
-            \Log::error('Error en exportExcel de administrativos', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            throw $e;
-        }
-    }
-
-    private function exportPdf($administrativos)
-    {
-        try {
-            \Log::info('Iniciando exportación PDF de administrativos', [
-                'data_type' => get_class($administrativos),
-                'count' => $administrativos->count()
-            ]);
-
-            $data = $administrativos;
-
-            if ($data->isEmpty()) {
-                \Log::warning('No hay administrativos para exportar');
-                return response()->json(['error' => 'No hay datos para exportar'], 400);
-            }
-
-            $fileName = 'administrativos_' . date('Y-m-d_H-i-s') . '.pdf';
-            
-            $rows = $data->map(function($administrativo) {
-                return [
-                    $administrativo->id_administrativo ?? 'N/A',
-                    $administrativo->cargo ?? 'N/A',
-                    $administrativo->dni ?? 'N/A',
-                    trim(($administrativo->apellido_paterno ?? '') ),
-                    trim(($administrativo->primer_nombre ?? '') ),
-                    $administrativo->sueldo ?? 'N/A'
-                ];
-            })->toArray();
-
-            \Log::info('Filas preparadas para PDF de administrativos', ['total_rows' => count($rows)]);
-
-            $html = PDFExportHelper::generateTableHtml([
-                'title' => 'Administrativos',
-                'subtitle' => 'Listado de Administrativos',
-                'headers' => ['ID', 'Cargo', 'DNI', 'Apellidos', 'Nombres', 'Sueldo'],
-                'rows' => $rows,
-                'footer' => 'Sistema de Gestión Académica SIGMA - Generado automáticamente',
-            ]);
-
-            return PDFExportHelper::exportPdf($fileName, $html);
-
-        } catch (\Exception $e) {
-            \Log::error('Error en exportPdf de administrativos', [
-                'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine()
-            ]);
-            
-            throw $e;
-        }
+        return $exporterService->exportAsResponse($request, $exportRequest);
     }
 
 }
