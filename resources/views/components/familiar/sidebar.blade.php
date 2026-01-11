@@ -36,6 +36,19 @@
                     <span class="font-medium">Código:</span> {{ $alumno->codigo_educando ?? 'N/A' }}
                 </p>
 
+                {{-- Grado --}}
+                @php
+                    $matriculaActiva = $alumno->matriculas()->where('estado', true)->orderBy('año_escolar', 'desc')->first();
+                @endphp
+                <p class="text-xs text-gray-600 dark:text-gray-400 text-center mb-3">
+                    <span class="font-medium">Grado:</span> {{ $matriculaActiva?->grado?->nombre_grado ?? 'N/A' }}
+                </p>
+
+                {{-- Sección --}}
+                <p class="text-xs text-gray-600 dark:text-gray-400 text-center mb-3">
+                    <span class="font-medium">Sección:</span> {{ $matriculaActiva?->nombreSeccion ?? 'N/A' }}
+                </p>
+
                 {{-- Botón Ver más --}}
                 <div class="flex justify-center">
                     <a href="{{ route('familiar_dato_view') }}"
