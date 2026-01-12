@@ -38,6 +38,7 @@ class DatabaseSeeder extends Seeder
         // Ejecutar seeders en el orden correcto
         // IMPORTANTE: ConceptosSeeder debe ejecutarse PRIMERO porque crea la estructura base
         $this->call([
+            PeriodoAcademicoSeeder::class,
             ConceptosSeeder::class,    // 1. Crea niveles, grados, secciones, conceptos de pago, etc.
             UsuariosSeeder::class,     // 2. Crea usuarios del sistema
             TestUsersSeeder::class,    // 3. Crea usuarios de prueba

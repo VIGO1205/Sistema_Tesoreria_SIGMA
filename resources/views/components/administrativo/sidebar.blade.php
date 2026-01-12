@@ -144,4 +144,19 @@
             'icon' => 'reporte'
         ])
     @endcan
+
+    {{-- Configuración --}}
+    @can('access-resource', 'configuracion')
+        @include('components.para-sidebar.dropdown-button', [
+            'name' => 'Configuración',
+            'items' => [
+                'Periodo Académico'
+            ],
+            'links' => [
+                'Periodo Académico' => 'periodo_academico_view'
+            ],
+            'icon' => 'configuracion'
+        ])
+    @endcan
+
 @endsection

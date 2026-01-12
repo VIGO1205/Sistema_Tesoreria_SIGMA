@@ -157,6 +157,12 @@ class AppServiceProvider extends ServiceProvider
                     'view_details' => ['Director', 'Secretaria'],
                     'download' => ['Director', 'Secretaria'],
                 ],
+                'configuracion' => [
+                    'view' => ['Director'],
+                    'create' => ['Director'],
+                    'edit' => ['Director'],
+                    'delete' => ['Director'],
+                ],
                 'reportes' => [
                     'view' => ['Director'],
                     'create' => ['Director'],
