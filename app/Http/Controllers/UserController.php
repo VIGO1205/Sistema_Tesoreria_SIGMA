@@ -176,7 +176,7 @@ class UserController extends Controller
     {
         $tipos = [
             ['id' => 'Administrativo', 'descripcion' => 'Administrativo'],
-            ['id' => 'Personal', 'descripcion' => 'Personal'],
+            ['id' => 'Familiar', 'descripcion' => 'Familiar'],
             ['id' => 'PreApoderado', 'descripcion' => 'PreApoderado']
         ];
 
@@ -193,7 +193,7 @@ class UserController extends Controller
         $request->validate([
             'username' => 'required|string|max:50|unique:users,username',
             'password' => 'required|string|min:6|confirmed',
-            'tipo' => 'required|in:Administrativo,Personal,PreApoderado'
+            'tipo' => 'required|in:Administrativo,Familiar,PreApoderado'
         ], [
             'username.required' => 'El nombre de usuario es obligatorio.',
             'username.unique' => 'El nombre de usuario ya existe.',
@@ -223,7 +223,7 @@ class UserController extends Controller
 
         $tipos = [
             ['id' => 'Administrativo', 'descripcion' => 'Administrativo'],
-            ['id' => 'Personal', 'descripcion' => 'Personal'],
+            ['id' => 'Familiar', 'descripcion' => 'Familiar'],
             ['id' => 'PreApoderado', 'descripcion' => 'PreApoderado']
         ];
 
@@ -252,7 +252,7 @@ class UserController extends Controller
                 'max:50',
                 Rule::unique('users', 'username')->ignore($usuario->id_usuario, 'id_usuario')
             ],
-            'tipo' => 'required|in:Administrativo,Personal,PreApoderado',
+            'tipo' => 'required|in:Administrativo,Familiar,PreApoderado',
             'estado' => 'required|boolean'
         ], [
             'username.required' => 'El nombre de usuario es obligatorio.',

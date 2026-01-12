@@ -31,7 +31,7 @@
     class="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar"
   >
     <!-- Sidebar Menu -->
-    <nav x-data="{selected: 'Calendar'}">
+    <nav x-data="{selected: ''}">
       <!-- Menu Group -->
       <div>
         <h3 class="mb-4 text-xs uppercase leading-[20px] text-gray-400">
@@ -39,7 +39,7 @@
             class="menu-group-title"
             :class="sidebarToggle ? 'lg:hidden' : ''"
           >
-            MENU 
+            MENU
           </span>
 
           <svg
