@@ -8,8 +8,8 @@ use Illuminate\View\View;
 
 class PDFExporter implements ITableExporter
 {
-    private string $template;
-    private ?array $options;
+    protected string $template;
+    protected ?array $options;
 
     public function __construct(string $template, ?array $options = null)
     {
@@ -17,7 +17,7 @@ class PDFExporter implements ITableExporter
         $this->options = $options;
     }
 
-    private function getDefaultOptions(): array
+    protected function getDefaultOptions(): array
     {
         $options = [
             'defaultFont' => 'Arial',
@@ -29,7 +29,7 @@ class PDFExporter implements ITableExporter
         return $options;
     }
 
-    private function getDebugOptions(): array
+    protected function getDebugOptions(): array
     {
         $options = $this->getDefaultOptions();
         $options['debugKeepTemp'] = true;
@@ -43,7 +43,7 @@ class PDFExporter implements ITableExporter
         return $options;
     }
 
-    public function export(ExportRequest $request): \Barryvdh\DomPDF\PDF
+    public function export(ExportRequest $request)
     {
         $pdf = Pdf::loadView($this->template, [
             'title' => $request->title(),
@@ -58,7 +58,7 @@ class PDFExporter implements ITableExporter
         return $pdf;
     }
 
-    public function exportAsResponse(ExportRequest $request): \Illuminate\Http\Response
+    public function exportAsResponse(ExportRequest $request)
     {
         $pdf = $this->export($request);
         return $pdf->stream($request->option('filename', 'document') . '.pdf');

@@ -5,8 +5,12 @@
     <meta charset="utf-8">
     <title>Exportar a PDF</title>
     <style>
+        @font-face {
+            font-family: 'Arial';
+            src: url({{'file:///' . str_replace('\\', '/', storage_path('fonts/arial-unicode.ttf'))}}) format('truetype');  
+        }
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Arial';
             margin: 20px;
             font-size: 12px;
             line-height: 1.4;
