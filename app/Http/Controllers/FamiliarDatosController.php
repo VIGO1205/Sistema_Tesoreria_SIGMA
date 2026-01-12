@@ -7,7 +7,9 @@ use App\Helpers\Home\Familiar\FamiliarSidebarComponent;
 use App\Helpers\Tables\CRUDTableComponent;
 use App\Helpers\Tables\ViewBasedComponent;
 use App\Http\Controllers\Home\Utils;
+use App\Models\Alumno;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class FamiliarDatosController extends Controller
 {
@@ -17,7 +19,7 @@ class FamiliarDatosController extends Controller
         if ($requested == null){
             return redirect(route('principal'));
         }
-        
+
         $header = Utils::crearHeaderConAlumnos($request);
 
         $page = CRUDTablePage::new()
@@ -117,5 +119,89 @@ class FamiliarDatosController extends Controller
         $content = new ViewBasedComponent('homev2.familiares.datos_view', compact('data'));
         $page->content($content);
         return $page->render();
+    }
+
+    public function actualizar(Request $request)
+    {
+        $alumno = $request->session()->get('alumno');
+
+        if ($alumno == null) {
+            return redirect(route('principal'));
+        }
+
+        // Validar los datos del formulario
+        $validated = $request->validate([
+            'primer_nombre' => 'required|string|max:255',
+            'apellido_paterno' => 'required|string|max:255',
+            'apellido_materno' => 'required|string|max:255',
+            'otros_nombres' => 'nullable|string|max:255',
+            'telefono' => 'nullable|string|max:20',
+            'direccion' => 'nullable|string|max:500',
+            'pais' => 'nullable|string',
+            'departamento' => 'nullable|string',
+            'provincia' => 'nullable|string',
+            'distrito' => 'nullable|string',
+            'lengua_materna' => 'nullable|string',
+            'estado_civil' => 'nullable|string',
+            'religion' => 'nullable|string|max:255',
+            'parroquia_bautizo' => 'nullable|string|max:255',
+            'medio_transporte' => 'nullable|string|max:255',
+            'tiempo_demora' => 'nullable|string|max:100',
+            'material_vivienda' => 'nullable|string|max:255',
+            'energia_electrica' => 'nullable|string|max:50',
+            'agua_potable' => 'nullable|string|max:50',
+            'desague' => 'nullable|string|max:50',
+            'ss_hh' => 'nullable|string|max:50',
+            'num_habitantes' => 'nullable|integer',
+            'situacion_vivienda' => 'nullable|string|max:255',
+            'escala' => 'nullable|string|max:10',
+            'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        // Actualizar los datos del alumno
+        $alumno->primer_nombre = $validated['primer_nombre'];
+        $alumno->apellido_paterno = $validated['apellido_paterno'];
+        $alumno->apellido_materno = $validated['apellido_materno'];
+        $alumno->otros_nombres = $validated['otros_nombres'] ?? null;
+        $alumno->telefono = $validated['telefono'] ?? null;
+        $alumno->direccion = $validated['direccion'] ?? null;
+        $alumno->pais = $validated['pais'] ?? null;
+        $alumno->departamento = $validated['departamento'] ?? null;
+        $alumno->provincia = $validated['provincia'] ?? null;
+        $alumno->distrito = $validated['distrito'] ?? null;
+        $alumno->lengua_materna = $validated['lengua_materna'] ?? null;
+        $alumno->estado_civil = $validated['estado_civil'] ?? null;
+        $alumno->religion = $validated['religion'] ?? null;
+        $alumno->parroquia_bautizo = $validated['parroquia_bautizo'] ?? null;
+        $alumno->medio_transporte = $validated['medio_transporte'] ?? null;
+        $alumno->tiempo_demora = $validated['tiempo_demora'] ?? null;
+        $alumno->material_vivienda = $validated['material_vivienda'] ?? null;
+        $alumno->energia_electrica = $validated['energia_electrica'] ?? null;
+        $alumno->agua_potable = $validated['agua_potable'] ?? null;
+        $alumno->desague = $validated['desague'] ?? null;
+        $alumno->ss_hh = $validated['ss_hh'] ?? null;
+        $alumno->num_habitantes = $validated['num_habitantes'] ?? null;
+        $alumno->situacion_vivienda = $validated['situacion_vivienda'] ?? null;
+        $alumno->escala = $validated['escala'] ?? null;
+
+        // Procesar la foto si se ha subido una nueva
+        if ($request->hasFile('foto')) {
+            // Eliminar la foto anterior si existe
+            if ($alumno->foto_url && Storage::exists($alumno->foto_url)) {
+                Storage::delete($alumno->foto_url);
+            }
+
+            // Guardar la nueva foto
+            $path = $request->file('foto')->store('fotos_alumnos', 'public');
+            $alumno->foto_url = $path;
+        }
+
+        $alumno->save();
+
+        // Actualizar el alumno en la sesión
+        $request->session()->put('alumno', $alumno);
+
+        return redirect()->route('familiar.alumno-datos.view')
+            ->with('success', 'Datos actualizados correctamente');
     }
 }

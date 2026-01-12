@@ -1,4 +1,16 @@
-<div class="p-8 m-4 bg-gray-100 dark:bg-white/[0.03] rounded-2xl">
+<div class="p-8 m-4 bg-gray-100 dark:bg-white/[0.03] rounded-2xl" id="view-container">
+    <!-- Mensaje de éxito -->
+    @if(session('success'))
+        <div class="mb-6 rounded-lg bg-green-50 p-4 text-sm text-green-800 dark:bg-green-900/20 dark:text-green-400 border border-green-200 dark:border-green-800">
+            <div class="flex items-center gap-2">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                </svg>
+                <span class="font-medium">{{ session('success') }}</span>
+            </div>
+        </div>
+    @endif
+
     <!-- Header -->
     <div class="flex pb-6 justify-between items-center border-b border-gray-200 dark:border-gray-700">
         <div>
@@ -6,6 +18,14 @@
             <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">ID: {{ $data['id'] }}</p>
         </div>
         <div class="flex gap-3">
+            <button onclick="toggleEditMode()" id="btn-editar"
+                class="inline-flex items-center gap-2 rounded-lg border border-blue-300 bg-blue-500 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:border-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
+            >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+                Editar
+            </button>
             <a href="{{ $data['return'] }}"
                 class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-6 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
             >
@@ -18,17 +38,17 @@
     <div class="mt-8 mb-8">
         <div class="flex items-center gap-6 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-6">
             <div class="flex-shrink-0">
-                <img 
-                    src="{{ $data['foto_url'] }}" 
+                <img
+                    src="{{ $data['foto_url'] }}"
                     alt="Foto del alumno"
                     class="w-32 h-32 rounded-full object-cover border-4 border-gray-200 dark:border-gray-600"
                 >
             </div>
             <div>
                 <h3 class="text-xl font-bold text-gray-800 dark:text-gray-200">
-                    {{ $data['default']['primer_nombre'] }} 
-                    {{ $data['default']['otros_nombres'] }} 
-                    {{ $data['default']['apellido_paterno'] }} 
+                    {{ $data['default']['primer_nombre'] }}
+                    {{ $data['default']['otros_nombres'] }}
+                    {{ $data['default']['apellido_paterno'] }}
                     {{ $data['default']['apellido_materno'] }}
                 </h3>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -44,7 +64,7 @@
     <form method="POST" id="form" action="" class="mt-8">
             @method('PATCH')
             @csrf
-            
+
             <!-- Información Básica -->
             <div class="mb-8">
                 <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center">
@@ -401,3 +421,84 @@
             </div>
         </form>
     </div>
+
+    <!-- Vista de Edición (Oculta por defecto) -->
+    <div id="edit-container" class="hidden">
+        @php
+            // Preparar datos para la vista de edición
+            $editData = $data;
+            $editData['alumno'] = (object) [
+                'foto_url' => $data['foto_url'],
+                'primer_nombre' => $data['default']['primer_nombre'],
+                'apellido_paterno' => $data['default']['apellido_paterno'],
+                'apellido_materno' => $data['default']['apellido_materno'],
+                'otros_nombres' => $data['default']['otros_nombres'],
+                'departamento' => $data['default']['departamento'],
+                'provincia' => $data['default']['provincia'],
+                'distrito' => $data['default']['distrito'],
+                'telefono' => $data['default']['telefono'],
+                'direccion' => $data['default']['direccion'],
+                'lengua_materna' => $data['default']['lengua_materna'],
+                'estado_civil' => $data['default']['estado_civil'],
+                'religion' => $data['default']['religion'],
+                'parroquia_bautizo' => $data['default']['parroquia_de_bautizo'],
+                'medio_transporte' => $data['default']['medio_de_transporte'],
+                'tiempo_demora' => $data['default']['tiempo_de_demora'],
+                'material_vivienda' => $data['default']['material_vivienda'],
+                'energia_electrica' => $data['default']['energia_electrica'],
+                'agua_potable' => $data['default']['agua_potable'],
+                'desague' => $data['default']['desague'],
+                'ss_hh' => $data['default']['s_s__h_h'],
+                'num_habitantes' => $data['default']['numero_de_habitantes'],
+                'situacion_vivienda' => $data['default']['situacion_de_vivienda'],
+                'escala' => $data['default']['escala'] ?? 'A',
+            ];
+            $editData['solicitud_pendiente'] = false;
+        @endphp
+        @include('homev2.familiares.alumno_actualizar_datos', ['data' => $editData])
+    </div>
+</div>
+
+<script>
+    function toggleEditMode() {
+        const viewContainer = document.getElementById('view-container');
+        const editContainer = document.getElementById('edit-container');
+
+        if (viewContainer.classList.contains('hidden')) {
+            // Volver a vista de lectura
+            viewContainer.classList.remove('hidden');
+            editContainer.classList.add('hidden');
+        } else {
+            // Mostrar vista de edición
+            viewContainer.classList.add('hidden');
+            editContainer.classList.remove('hidden');
+
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }
+
+    // Manejar el botón cancelar de la vista de edición
+    document.addEventListener('DOMContentLoaded', function() {
+        // Buscar el botón volver dentro del edit-container después de cargar
+        setTimeout(() => {
+            const editContainer = document.getElementById('edit-container');
+            if (editContainer) {
+                // Encontrar todos los enlaces "Volver" dentro de la vista de edición
+                const volverLinks = editContainer.querySelectorAll('a');
+                volverLinks.forEach(link => {
+                    // Verificar si el texto del link contiene "Volver"
+                    if (link.textContent.trim().toLowerCase().includes('volver')) {
+                        link.addEventListener('click', function(e) {
+                            // Si estamos en modo edición, prevenir navegación y solo cambiar vista
+                            if (!editContainer.classList.contains('hidden')) {
+                                e.preventDefault();
+                                toggleEditMode();
+                            }
+                        });
+                    }
+                });
+            }
+        }, 100);
+    });
+</script>

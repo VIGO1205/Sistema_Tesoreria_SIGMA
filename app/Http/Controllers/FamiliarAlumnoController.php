@@ -143,12 +143,12 @@ class FamiliarAlumnoController extends Controller
             if ($alumnoModel->foto) {
                 Storage::disk('public')->delete($alumnoModel->foto);
             }
-            
+
             // Guardar nueva foto
             $foto = $request->file('foto');
             $nombreFoto = 'alumno_' . $alumnoModel->getKey() . '_' . time() . '.' . $foto->getClientOriginalExtension();
             $rutaFoto = $foto->storeAs('fotos/alumnos', $nombreFoto, 'public');
-            
+
             $alumnoModel->foto = $rutaFoto;
         }
 
@@ -181,7 +181,7 @@ class FamiliarAlumnoController extends Controller
         // Actualizar sesión con datos nuevos
         $request->session()->put('alumno', $alumnoModel->fresh());
 
-        return redirect()->route('familiar_matricula_prematricula_create')
+        return redirect()->route('familiar_dato_view')
             ->with('success', 'Datos del alumno actualizados correctamente.');
     }
 

@@ -32,24 +32,24 @@
             <div class="flex items-center gap-6 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
                 <!-- Foto actual -->
                 <div class="flex-shrink-0">
-                    <img 
+                    <img
                         id="preview-foto"
-                        src="{{ $data['alumno']->foto_url }}" 
+                        src="{{ $data['alumno']->foto_url }}"
                         alt="Foto de {{ $data['alumno']->primer_nombre }}"
                         class="w-32 h-32 rounded-full object-cover border-4 border-gray-200 dark:border-gray-600"
                     >
                 </div>
-                
+
                 <!-- Input para cambiar foto -->
                 <div class="flex-1">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Cambiar Foto
                     </label>
                     <div class="relative">
-                        <input 
-                            type="file" 
-                            name="foto" 
-                            id="foto" 
+                        <input
+                            type="file"
+                            name="foto"
+                            id="foto"
                             accept=".jpg,.jpeg,.png"
                             class="peer absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                             onchange="previewImage(this)"
@@ -83,25 +83,25 @@
                 Información Personal
             </h3>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                @include('components.forms.string', [
+                @include('components.forms.string-ineditable-real', [
                     'label' => 'Apellido Paterno',
                     'name' => 'apellido_paterno',
                     'error' => $errors->first('apellido_paterno') ?? false,
                     'value' => old('apellido_paterno', $data['alumno']->apellido_paterno)
                 ])
-                @include('components.forms.string', [
+                @include('components.forms.string-ineditable-real', [
                     'label' => 'Apellido Materno',
                     'name' => 'apellido_materno',
                     'error' => $errors->first('apellido_materno') ?? false,
                     'value' => old('apellido_materno', $data['alumno']->apellido_materno)
                 ])
-                @include('components.forms.string', [
+                @include('components.forms.string-ineditable-real', [
                     'label' => 'Primer Nombre',
                     'name' => 'primer_nombre',
                     'error' => $errors->first('primer_nombre') ?? false,
                     'value' => old('primer_nombre', $data['alumno']->primer_nombre)
                 ])
-                @include('components.forms.string', [
+                @include('components.forms.string-ineditable-real', [
                     'label' => 'Otros Nombres',
                     'name' => 'otros_nombres',
                     'error' => $errors->first('otros_nombres') ?? false,
@@ -402,16 +402,16 @@
         function previewImage(input) {
             const preview = document.getElementById('preview-foto');
             const filename = document.getElementById('foto_filename');
-            
+
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
-                
+
                 reader.onload = function(e) {
                     preview.src = e.target.result;
                 }
-                
+
                 reader.readAsDataURL(input.files[0]);
-                
+
                 filename.innerText = input.files[0].name;
                 filename.classList.remove('text-gray-600');
                 filename.classList.add('text-gray-900', 'dark:text-white');
@@ -421,5 +421,5 @@
 
 @section('custom-js')
     <script src="{{ asset('js/tables.js') }}"></script>
-    
+
 @endsection
