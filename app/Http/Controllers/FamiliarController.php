@@ -5,8 +5,8 @@ use App\Interfaces\IExporterService;
 use App\Interfaces\IExportRequestFactory;
 use App\Models\Familiar;
 use App\Models\User;
-
 use App\Models\Alumno;
+use App\Models\Archivo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -279,12 +279,17 @@ class FamiliarController extends Controller
 
     public function create(Request $request)
     {
-        $usuarios = User::where('estado', '=', '1')->get();
         $alumnos = Alumno::where('estado', '=', '1')->get();
+        $tiposUsuario = [
+            'Familiar' => 'Familiar',
+            'Administrativo' => 'Administrativo',
+            'Personal' => 'Personal',
+            'PreApoderado' => 'Pre-Apoderado',
+        ];
         $data = [
             'return' => route('familiar_view', ['abort' => true]),
-            'usuarios' => $usuarios,
             'alumnos' => $alumnos,
+            'tiposUsuario' => $tiposUsuario,
         ];
         return view('gestiones.familiar.create', compact('data'));
     }
@@ -292,7 +297,12 @@ class FamiliarController extends Controller
     public function createNewEntry(Request $request, $returnModel = false)
     {
         $request->validate([
-            'id_usuario' => 'required|exists:users,id_usuario',
+            // Validaciones para usuario
+            'nombre_usuario' => 'required|string|max:50|unique:users,username',
+            'password' => 'required|string|min:8|confirmed',
+            'tipo_usuario' => 'required|string|in:Familiar,Administrativo,Personal,PreApoderado',
+            'fotografia' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            // Validaciones para familiar
             'dni' => 'required|string|max:20',
             'apellido_paterno' => 'required|string|max:50',
             'apellido_materno' => 'required|string|max:50',
@@ -301,40 +311,77 @@ class FamiliarController extends Controller
             'numero_contacto' => 'nullable|string|max:20',
             'correo_electronico' => 'nullable|email|max:100',
         ], [
-            'id_usuario.required' => 'Debe seleccionar un usuario.',
-            'id_usuario.exists' => 'El usuario seleccionado no existe.',
+            'nombre_usuario.required' => 'Ingrese un nombre de usuario.',
+            'nombre_usuario.unique' => 'El nombre de usuario ya existe.',
+            'password.required' => 'Ingrese una contraseña.',
+            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
+            'password.confirmed' => 'Las contraseñas no coinciden.',
+            'tipo_usuario.required' => 'Seleccione un tipo de usuario.',
             'dni.required' => 'Ingrese un DNI válido.',
             'apellido_paterno.required' => 'Ingrese el apellido paterno.',
             'apellido_materno.required' => 'Ingrese el apellido materno.',
             'primer_nombre.required' => 'Ingrese el primer nombre.',
         ]);
 
-        $familiar = Familiar::create([
-            'id_usuario' => $request->id_usuario,
-            'dni' => $request->dni,
-            'apellido_paterno' => $request->apellido_paterno,
-            'apellido_materno' => $request->apellido_materno,
-            'primer_nombre' => $request->primer_nombre,
-            'otros_nombres' => $request->otros_nombres,
-            'numero_contacto' => $request->numero_contacto,
-            'correo_electronico' => $request->correo_electronico,
-        ]);
+        \DB::beginTransaction();
+        try {
+            // Manejar foto si se sube
+            $idArchivo = null;
+            if ($request->hasFile('fotografia')) {
+                $foto = $request->file('fotografia');
+                $nombreFoto = 'familiar_' . time() . '_' . uniqid() . '.' . $foto->getClientOriginalExtension();
+                $fotoPath = $foto->storeAs('usuarios', $nombreFoto, 'public');
 
-        // Sincroniza alumnos y parentesco si se envían
-        if ($request->has('alumnos')) {
-            $syncData = [];
-            foreach ($request->input('alumnos') as $id_alumno => $parentesco) {
-                $syncData[$id_alumno] = ['parentesco' => $parentesco];
+                // Crear registro en tabla archivos
+                $archivo = new \App\Models\Archivo(['foto' => $fotoPath]);
+                $archivo->save();
+                $idArchivo = $archivo->idArchivo;
             }
-            $familiar->alumnos()->sync($syncData);
+
+            // Crear usuario
+            $userData = [
+                'username' => $request->nombre_usuario,
+                'password' => bcrypt($request->password),
+                'tipo' => $request->tipo_usuario,
+                'estado' => '1',
+                'idArchivo' => $idArchivo,
+            ];
+
+            $usuario = User::create($userData);
+
+            // Crear familiar con el usuario recién creado
+            $familiar = Familiar::create([
+                'id_usuario' => $usuario->id_usuario,
+                'dni' => $request->dni,
+                'apellido_paterno' => $request->apellido_paterno,
+                'apellido_materno' => $request->apellido_materno,
+                'primer_nombre' => $request->primer_nombre,
+                'otros_nombres' => $request->otros_nombres,
+                'numero_contacto' => $request->numero_contacto,
+                'correo_electronico' => $request->correo_electronico,
+            ]);
+
+            // Sincroniza alumnos y parentesco si se envían
+            if ($request->has('alumnos')) {
+                $syncData = [];
+                foreach ($request->input('alumnos') as $id_alumno => $parentesco) {
+                    $syncData[$id_alumno] = ['parentesco' => $parentesco];
+                }
+                $familiar->alumnos()->sync($syncData);
+            }
+
+            \DB::commit();
+
+            if ($returnModel) {
+                return $familiar;
+            }
+
+            return redirect(route('familiar_view', ['created' => true]));
+
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            return redirect()->back()->withErrors(['error' => 'Error al crear el familiar: ' . $e->getMessage()])->withInput();
         }
-
-        if ($returnModel) {
-            return $familiar;
-        }
-
-        return redirect(route('familiar_view', ['created' => true]));
-
     }
 
     public function edit(Request $request, $id)
