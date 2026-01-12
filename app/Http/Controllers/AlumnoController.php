@@ -1176,27 +1176,27 @@ class AlumnoController extends Controller
         $params = RequestHelper::extractSearchParams($request);
         $query = static::doSearch($sqlColumns, $params->search, null, $params->applied_filters);
 
-        $query = $query->sortBy('apellido_paterno');
-
         $data = $query->map(function ($alumno) {
-            $ultimaMatricula = $alumno->matriculas->last();
-            $ultimoGrado = $ultimaMatricula->grado;
-            $ultimaSeccion = $ultimaMatricula->seccion;
+            $ultimaMatricula = $alumno->matriculas()->where('estado', 1)->orderBy('año_escolar', 'desc')->first();
+
+            $añoEscolar = $ultimaMatricula ? $ultimaMatricula->año_escolar : 'N/A';
+            $grado = $ultimaMatricula && $ultimaMatricula->grado ? $ultimaMatricula->grado->nombre_grado : 'N/A';
+            $seccion = $ultimaMatricula && $ultimaMatricula->seccion ? $ultimaMatricula->seccion->nombreSeccion : 'N/A';
+
             return [
                 $alumno->codigo_educando,
                 $alumno->dni,
                 $alumno->apellido_paterno . " " . $alumno->apellido_materno,
                 $alumno->primer_nombre . " " . $alumno->otros_nombres,
                 $alumno->sexo,
-                $alumno->direccion,
-                $ultimaMatricula->año_escolar,
-                $ultimoGrado->nombre_grado,
-                $ultimaSeccion->nombreSeccion,
+                $añoEscolar,
+                $grado,
+                $seccion,
             ];
         });
 
         $title = 'Listado de Alumnos';
-        $headers = ["Cod. Edu.", "DNI", "Apellidos", "Nombres", "Sexo", "Dirección", "Año Escolar", "Grado", "Sección"];
+        $headers = ["Código Educando", "DNI", "Apellidos", "Nombres", "Sexo", "Año Escolar", "Grado", "Sección"];
         $exportRequest = $requestFactory->create(
             $title,
             $headers,

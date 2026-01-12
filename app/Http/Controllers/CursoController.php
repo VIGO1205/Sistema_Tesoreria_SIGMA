@@ -49,12 +49,12 @@ class CursoController extends Controller
         $resource = 'academica';
 
         $params = RequestHelper::extractSearchParams($request);
-        
+
         $page = CRUDTablePage::new()
             ->title("Cursos")
             ->sidebar(new AdministrativoSidebarComponent())
             ->header(new AdministrativoHeaderComponent());
-        
+
         $content = CRUDTableComponent::new()
             ->title("Cursos");
 
@@ -103,7 +103,7 @@ class CursoController extends Controller
         $page->modals([$cautionModal]);
 
         /* Lógica del controller */
-        
+
         $query = static::doSearch($sqlColumns, $params->search, $params->showing, $params->applied_filters);
 
         if ($params->page > $query->lastPage()){
@@ -124,7 +124,7 @@ class CursoController extends Controller
             "Pertenece al nivel" => $nivelesExistentes
         ];
         $content->filterConfig = $filterConfig;
-        
+
         $table = new TableComponent();
         $table->columns = ["ID", "Código del curso", "Pertenece al nivel", "Nombre del curso"];
         $table->rows = [];
@@ -136,7 +136,7 @@ class CursoController extends Controller
                 $curso->codigo_curso,
                 $curso->niveleducativo->nombre_nivel,
                 $curso->nombre_curso,
-            ]); 
+            ]);
         }
         $table->actions = [
             new TableAction('edit', 'curso_edit', $resource),
@@ -169,7 +169,7 @@ class CursoController extends Controller
 
         if (!is_numeric($paginaActual) || $paginaActual <= 0) $paginaActual = 1;
         if (!is_numeric($maxEntriesShow) || $maxEntriesShow <= 0) $maxEntriesShow = 10;
-        
+
         $query = CursoController::doSearch($sqlColumns, $search, $maxEntriesShow);
 
         if ($paginaActual > $query->lastPage()){
@@ -177,7 +177,7 @@ class CursoController extends Controller
             $request['page'] = $paginaActual;
             $query = CursoController::doSearch($sqlColumns, $search, $maxEntriesShow);
         }
-        
+
         $data = [
             'titulo' => 'Cursos',
             'columnas' => [
@@ -213,7 +213,7 @@ class CursoController extends Controller
             $data['deleted'] = $request->input('deleted');
         }
 
-        
+
 
         foreach ($query as $curso){
             $nivel = NivelEducativo::findOrFail($curso->id_nivel);
@@ -224,7 +224,7 @@ class CursoController extends Controller
                 $curso->codigo_curso,
                 $nivel->nombre_nivel,
                 $curso->nombre_curso,
-            ]); 
+            ]);
         }
         return view('gestiones.curso.index', compact('data'));
     }
@@ -245,7 +245,7 @@ class CursoController extends Controller
         $nivel = $request->input('nivel_educativo');
         $codigoCurso = $request->input('código_del_curso');
         $nombreCurso = $request->input('nombre_del_curso');
-        
+
         $request->validate([
             'nivel_educativo' => 'required|max:10',
             'código_del_curso' => 'required|max:10',
@@ -335,22 +335,21 @@ class CursoController extends Controller
 
     public function export(Request $request, IExportRequestFactory $requestFactory, IExporterService $exporterService)
     {
-        $sqlColumns = ['id_curso', 'codigo_curso', 'nivel.nombre_nivel', 'nombre_curso'];
+        $sqlColumns = ['id_curso', 'codigo_curso', 'NivelEducativo.nombre_nivel', 'nombre_curso'];
 
         $params = RequestHelper::extractSearchParams($request);
         $query = static::doSearch($sqlColumns, $params->search, null, $params->applied_filters);
 
         $data = $query->map(function ($curso) {
             return [
-                $curso->id_curso,
                 $curso->codigo_curso,
-                $curso->nivel->nombre_nivel ?? 'N/A',
+                $curso->niveleducativo ? $curso->niveleducativo->nombre_nivel : 'N/A',
                 $curso->nombre_curso,
             ];
         });
 
         $title = 'Listado de Cursos';
-        $headers = ['ID', 'Código', 'Nivel Educativo', 'Nombre'];
+        $headers = ['Código del Curso', 'Nivel Educativo', 'Nombre del Curso'];
 
         $exportRequest = $requestFactory->create(
             $title,

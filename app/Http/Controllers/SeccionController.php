@@ -54,12 +54,12 @@ class SeccionController extends Controller
         $resource = 'academica';
 
         $params = RequestHelper::extractSearchParams($request);
-        
+
         $page = CRUDTablePage::new()
             ->title("Secciones")
             ->sidebar(new AdministrativoSidebarComponent())
             ->header(new AdministrativoHeaderComponent());
-        
+
         $content = CRUDTableComponent::new()
             ->title("Secciones");
 
@@ -108,7 +108,7 @@ class SeccionController extends Controller
         $page->modals([$cautionModal]);
 
         /* Lógica del controller */
-        
+
         $query = static::doSearch($sqlColumns, $params->search, $params->showing, $params->applied_filters);
 
         if ($params->page > $query->lastPage()){
@@ -141,7 +141,7 @@ class SeccionController extends Controller
             "Seccion" => $seccionesExistentes
         ];
         $content->filterConfig = $filterConfig;
-        
+
         $table = new TableComponent();
         $table->columns = ["#", "Nivel Educativo", "Grado", "Seccion"];
         $table->rows = [];
@@ -155,7 +155,7 @@ class SeccionController extends Controller
                 $seccion->grado->nombre_grado,
                 $seccion->nombreSeccion,
                 $seccion->id_grado, // Está oculto ya que no tiene una columna asignada.
-            ]); 
+            ]);
         }
 
         $table->actions = [
@@ -252,13 +252,13 @@ class SeccionController extends Controller
         foreach ($secciones as $key => $itemseccion) {
             $data['filas'][] = [
                 $key + 1 + $pagination*($paginaActual-1),
-                $itemseccion->grado->nivelEducativo->nombre_nivel,  
-                $itemseccion->grado->nombre_grado,        
-                $itemseccion->nombreSeccion,              
-                $itemseccion->id_grado                    
+                $itemseccion->grado->nivelEducativo->nombre_nivel,
+                $itemseccion->grado->nombre_grado,
+                $itemseccion->nombreSeccion,
+                $itemseccion->id_grado
             ];
         }
-         
+
         return view('gestiones.seccion.index', compact('data'));
     }
 
@@ -357,7 +357,7 @@ class SeccionController extends Controller
                                   ->orWhere('nombreSeccion', '!=', $nombreSeccion);
                         })
                         ->exists();
-                    
+
                     if ($exists) {
                         $fail('Ya existe una sección con este nombre en el grado seleccionado.');
                     }
@@ -374,7 +374,7 @@ class SeccionController extends Controller
             $tieneCatedras = $seccion->catedras()->exists();
 
             $tieneMatriculas = $seccion->matriculas()->exists();
-            
+
             if ($tieneCatedras) {
                 return back()->withErrors([
                     'error' => 'No se puede modificar esta sección porque tiene cátedras asignadas.'
@@ -390,7 +390,7 @@ class SeccionController extends Controller
             Seccion::where('id_grado', $idGrado)
                    ->where('nombreSeccion', $nombreSeccion)
                    ->delete();
-            
+
             Seccion::create([
                 'id_grado' => $request->input('grado'),
                 'nombreSeccion' => $request->input('seccion'),
@@ -428,7 +428,7 @@ class SeccionController extends Controller
             })
             ->orderBy('fecha_matricula', 'desc')
             ->paginate($Pagination)
-            ->withQueryString(); 
+            ->withQueryString();
 
         $añosDisponibles = Matricula::where('id_grado', $id_grado)
             ->where('nombreSeccion', $nombreSeccion)
@@ -451,7 +451,7 @@ class SeccionController extends Controller
 
     public function delete(Request $request)
     {
-        
+
         $id = $request->input('id');
         $ids = explode(",",$id);
 
@@ -469,47 +469,30 @@ class SeccionController extends Controller
         IExportRequestFactory $requestFactory,
         IExporterService $exporterService
     ) {
-        try {
+        $sqlColumns = ['NivelEducativo.nombre_nivel', 'Grado.nombre_grado', 'nombreSeccion'];
 
-            $sqlColumns = ['NivelEducativo.nombre_nivel', 'Grado.nombre_grado', 'nombreSeccion'];
+        $params = RequestHelper::extractSearchParams($request);
+        $query = static::doSearch($sqlColumns, $params->search, null, $params->applied_filters);
 
-            $params = RequestHelper::extractSearchParams($request);
-            $query = static::doSearch($sqlColumns, $params->search, null, $params->applied_filters);
+        $data = $query->map(function ($seccion) {
+            return [
+                $seccion->grado && $seccion->grado->niveleducativo ? $seccion->grado->niveleducativo->nombre_nivel : 'N/A',
+                $seccion->grado ? $seccion->grado->nombre_grado : 'N/A',
+                $seccion->nombreSeccion ?? 'N/A',
+            ];
+        });
 
-            $query = $query->sortBy(function ($seccion) {
-                return ($seccion->grado->niveleducativo->nombre_nivel ?? '') . 
-                    ($seccion->grado->nombre_grado ?? '') .
-                    ($seccion->nombreSeccion ?? '');
-            });
+        $title = 'Listado de Secciones';
+        $headers = ['Nivel Educativo', 'Grado', 'Sección'];
 
-            $data = $query->map(function ($seccion) {
-                return [
-                    $seccion->grado->niveleducativo->nombre_nivel ?? 'N/A',
-                    $seccion->grado->nombre_grado ?? 'N/A',
-                    $seccion->nombreSeccion ?? 'N/A',
-                ];
-            });
+        $exportRequest = $requestFactory->create(
+            $title,
+            $headers,
+            $data->toArray(),
+            ['filename' => 'secciones_' . date('d_m_Y')]
+        );
 
-            $title = 'Secciones';
-            $headers = ['Nivel Educativo', 'Grado', 'Sección'];
-
-            $exportRequest = $requestFactory->create(
-                $title,
-                $headers,
-                $data->toArray(),
-                [
-                    'filename' => 'secciones_' . date('d_m_Y'),
-                    'subtitle' => 'Listado de secciones del sistema',
-                    'footer' => 'Sistema de Gestión Académica SIGMA - Generado automáticamente'
-                ]
-            );
-
-            return $exporterService->exportAsResponse($request, $exportRequest);
-
-        } catch (\Exception $e) {
-            \Log::error('Error en exportación de secciones: ' . $e->getMessage());
-            return back()->with('error', 'Error durante la exportación');
-        }
+        return $exporterService->exportAsResponse($request, $exportRequest);
     }
 
 

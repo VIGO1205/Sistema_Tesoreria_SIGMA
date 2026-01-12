@@ -287,7 +287,6 @@ class ConceptoPagoController extends Controller
 
         $data = $query->map(function ($concepto) {
             return [
-                $concepto->id_concepto,
                 $concepto->descripcion,
                 $concepto->escala,
                 'S/ ' . number_format($concepto->monto, 2),
@@ -295,7 +294,7 @@ class ConceptoPagoController extends Controller
         });
 
         $title = 'Listado de Conceptos de Pago';
-        $headers = ['ID', 'Descripción', 'Escala', 'Monto'];
+        $headers = ['Descripción', 'Escala', 'Monto'];
 
         $exportRequest = $requestFactory->create(
             $title,
