@@ -23,9 +23,14 @@ class Matricula extends Model
         'id_grado',
         'nombreSeccion',
         'tipo', 
-        'estado'
+        'estado',
+        'id_periodo_academico'
     ];
 
+    public function periodoAcademico()
+    {
+        return $this->belongsTo(PeriodoAcademico::class, 'id_periodo_academico', 'id_periodo_academico');
+    }
 
     public function alumno()
     {

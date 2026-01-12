@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Models\ComposicionFamiliar;
 use Faker\Factory as Faker;
 use Carbon\Carbon;
+use App\Models\PeriodoAcademico;
 
 class AlumnosSeeder extends Seeder
 {
@@ -125,9 +126,12 @@ class AlumnosSeeder extends Seeder
                                 'estado' => true
                             ]);
 
+                            $periodoActual = PeriodoAcademico::actual();
+
                             // Matricula del alumno
                             $matricula = Matricula::create([
                                 'id_alumno' => $alumno->id_alumno,
+                                'id_periodo_academico' => $periodoActual?->id_periodo_academico,
                                 'año_escolar' => $anioActual,
                                 'fecha_matricula' => now(),
                                 'escala' => $escala,
