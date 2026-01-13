@@ -90,6 +90,22 @@
                 'icon' => 'monedas'
             ])
         @endcan
+
+        {{-- Componente de Traslado --}}
+        @can('access-resource', 'traslado')
+            @include('components.para-sidebar.dropdown-button', [
+                'name' => 'Traslado',
+                'items' => [
+                    'Traslado Regular',
+                    'Traslado Excepcional',
+                ],
+                'links' => [
+                    'Traslado Regular' => 'familiar_traslado_regular',
+                    'Traslado Excepcional' => 'familiar_traslado_excepcional',
+                ],
+                'icon' => 'traslado'
+            ])
+        @endcan
     @endif
 @endsection
 

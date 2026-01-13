@@ -194,6 +194,10 @@ class AppServiceProvider extends ServiceProvider
                     'view' => ['Familiar'],
                     'create' => ['Familiar'],
                 ],
+                'traslado' => [
+                    'view' => ['Familiar'],
+                    'create' => ['Familiar'],
+                ],
                 'academica' => [
                     'view' => ['Familiar'],
                 ],

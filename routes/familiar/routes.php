@@ -25,6 +25,14 @@ Route::group([
 });
 
 Route::group([
+    'prefix' => 'alumno-traslado',
+    'as' => 'familiar_traslado_',
+    'middleware' => ['can:access-resource,"traslado"'],
+], function(){
+    require __DIR__ . '/traslado.php';
+});
+
+Route::group([
     'prefix' => 'cambiar-password',
     'as' => 'familiar_cambiar_password_',
     'middleware' => ['can:access-resource,"cambiar_password"'],

@@ -28,6 +28,7 @@ class SolicitudTraslado extends Model
         'observaciones',
         'estado',
         'fecha_solicitud',
+        'tipo_solicitud',
     ];
 
     protected function casts(): array
