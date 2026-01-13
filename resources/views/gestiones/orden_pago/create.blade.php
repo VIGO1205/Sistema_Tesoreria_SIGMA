@@ -97,9 +97,9 @@
                         </label>
                         <select id="filtro_nivel" class="w-full rounded-lg border-2 border-green-300 dark:border-green-700 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:ring-2 focus:ring-green-500 focus:border-green-500 shadow-sm">
                             <option value="">Todos los niveles</option>
-                            <option value="Inicial">Inicial</option>
-                            <option value="Primaria">Primaria</option>
-                            <option value="Secundaria">Secundaria</option>
+                            <option value="INICIAL">Inicial</option>
+                            <option value="PRIMARIA">Primaria</option>
+                            <option value="SECUNDARIA">Secundaria</option>
                         </select>
                     </div>
 
@@ -113,6 +113,15 @@
                         </label>
                         <select id="filtro_grado" class="w-full rounded-lg border-2 border-indigo-300 dark:border-indigo-700 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm">
                             <option value="">Todos los grados</option>
+                            <option value="3 AÑOS" data-nivel="INICIAL">3 AÑOS</option>
+                            <option value="4 AÑOS" data-nivel="INICIAL">4 AÑOS</option>
+                            <option value="5 AÑOS" data-nivel="INICIAL">5 AÑOS</option>
+                            <option value="PRIMERO" data-nivel="PRIMARIA,SECUNDARIA">PRIMERO</option>
+                            <option value="SEGUNDO" data-nivel="PRIMARIA,SECUNDARIA">SEGUNDO</option>
+                            <option value="TERCERO" data-nivel="PRIMARIA,SECUNDARIA">TERCERO</option>
+                            <option value="CUARTO" data-nivel="PRIMARIA,SECUNDARIA">CUARTO</option>
+                            <option value="QUINTO" data-nivel="PRIMARIA,SECUNDARIA">QUINTO</option>
+                            <option value="SEXTO" data-nivel="PRIMARIA">SEXTO</option>
                         </select>
                     </div>
 
@@ -126,6 +135,10 @@
                         </label>
                         <select id="filtro_seccion" class="w-full rounded-lg border-2 border-purple-300 dark:border-purple-700 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-sm">
                             <option value="">Todas las secciones</option>
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="C">C</option>
+                            <option value="D">D</option>
                         </select>
                     </div>
                 </div>
@@ -289,9 +302,22 @@
             </div>
             
             <div class="flex flex-col">
-                <label class="text-sm font-medium text-gray-700 dark:text-gray-400 mb-2">
-                    <span id="tituloDeudas">Deudas Atrasadas (Selecciona una o varias)</span>
-                </label>
+                <div class="flex items-center justify-between mb-3">
+                    <label class="text-sm font-medium text-gray-700 dark:text-gray-400">
+                        <span id="tituloDeudas">Deudas Atrasadas (Selecciona una o varias)</span>
+                    </label>
+                    <button type="button" id="btnSeleccionarTodasDeudas" 
+                        class="group relative inline-flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-indigo-200 dark:border-indigo-800 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 hover:from-indigo-100 hover:to-purple-100 dark:hover:from-indigo-900/30 dark:hover:to-purple-900/30 transition-all duration-200 shadow-sm hover:shadow-md">
+                        <div class="relative flex items-center justify-center w-5 h-5 rounded border-2 border-indigo-400 dark:border-indigo-500 bg-white dark:bg-gray-800 transition-all duration-200 group-hover:border-indigo-500 dark:group-hover:border-indigo-400">
+                            <svg id="iconSeleccionarTodas" class="w-3 h-3 text-indigo-600 dark:text-indigo-400 opacity-0 transition-opacity duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                        <span class="text-sm font-semibold text-indigo-700 dark:text-indigo-300 group-hover:text-indigo-800 dark:group-hover:text-indigo-200 transition-colors duration-200">
+                            Seleccionar todas
+                        </span>
+                    </button>
+                </div>
                 <div id="listaDeudasCheckbox" class="space-y-2 max-h-64 overflow-y-auto border border-gray-300 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-800">
                     <!-- Las deudas se llenarán dinámicamente aquí -->
                 </div>
