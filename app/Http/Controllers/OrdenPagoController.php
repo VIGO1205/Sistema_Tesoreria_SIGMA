@@ -851,25 +851,26 @@ class OrdenPagoController extends Controller
         try {
             $termino = $request->input('termino', '');
             $nivel_educativo = $request->input('nivel_educativo', '');
-            $grado_id = $request->input('grado_id', '');
-            $seccion_id = $request->input('seccion_id', '');
+            $grado_nombre = $request->input('grado_id', ''); // Ahora recibe nombre, no ID
+            $seccion_nombre = $request->input('seccion_id', ''); // Recibe nombre de sección
 
             \Log::info('Búsqueda de alumnos', [
                 'termino' => $termino,
                 'nivel_educativo' => $nivel_educativo,
-                'grado_id' => $grado_id,
-                'seccion_id' => $seccion_id
+                'grado_nombre' => $grado_nombre,
+                'seccion_nombre' => $seccion_nombre
             ]);
 
             // Validar que haya al menos un criterio
-            if (strlen($termino) < 2 && empty($nivel_educativo) && empty($grado_id) && empty($seccion_id)) {
+            if (strlen($termino) < 2 && empty($nivel_educativo) && empty($grado_nombre) && empty($seccion_nombre)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Debe ingresar un nombre o seleccionar al menos un filtro'
                 ]);
             }
 
-            $query = Alumno::query()
+            // IMPORTANTE: Buscar desde MATRÍCULAS activas para obtener todos los alumnos matriculados
+            $query = DB::table('matriculas')
                 ->select(
                     'alumnos.id_alumno',
                     'alumnos.codigo_educando',
@@ -887,13 +888,11 @@ class OrdenPagoController extends Controller
                     'matriculas.nombreSeccion',
                     'niveles_educativos.nombre_nivel'
                 )
-                ->leftJoin('matriculas', function($join) {
-                    $join->on('alumnos.id_alumno', '=', 'matriculas.id_alumno')
-                         ->where('matriculas.estado', true);
-                })
-                ->leftJoin('grados', 'matriculas.id_grado', '=', 'grados.id_grado')
-                ->leftJoin('niveles_educativos', 'grados.id_nivel', '=', 'niveles_educativos.id_nivel')
-                ->where('alumnos.estado', '1');
+                ->join('alumnos', 'matriculas.id_alumno', '=', 'alumnos.id_alumno')
+                ->join('grados', 'matriculas.id_grado', '=', 'grados.id_grado')
+                ->join('niveles_educativos', 'grados.id_nivel', '=', 'niveles_educativos.id_nivel')
+                ->where('matriculas.estado', true) // Solo matrículas activas
+                ->where('alumnos.estado', '1');    // Solo alumnos activos
 
             // Aplicar búsqueda por nombre, DNI o código
             if (strlen($termino) >= 2) {
@@ -912,21 +911,24 @@ class OrdenPagoController extends Controller
                 });
             }
 
-            // Aplicar filtros si están presentes
+            // Aplicar filtros si están presentes (comparaciones case-insensitive)
             if (!empty($nivel_educativo)) {
-                $query->where('niveles_educativos.nombre_nivel', $nivel_educativo);
+                $query->whereRaw('UPPER(niveles_educativos.nombre_nivel) = ?', [strtoupper($nivel_educativo)]);
             }
 
-            if (!empty($grado_id)) {
-                $query->where('matriculas.id_grado', $grado_id);
+            // Filtrar por nombre de grado (no por ID, case-insensitive)
+            if (!empty($grado_nombre)) {
+                $query->whereRaw('UPPER(grados.nombre_grado) = ?', [strtoupper($grado_nombre)]);
             }
 
-            if (!empty($seccion_id)) {
-                // El filtro ya viene con el nombreSeccion directamente
-                $query->where('matriculas.nombreSeccion', $seccion_id);
+            // Filtrar por nombre de sección (case-insensitive)
+            if (!empty($seccion_nombre)) {
+                $query->whereRaw('UPPER(matriculas.nombreSeccion) = ?', [strtoupper($seccion_nombre)]);
             }
 
-            $alumnos = $query->orderBy('alumnos.apellido_paterno')->limit(15)->get();
+            // Aumentar límite cuando se usan filtros (los filtros ya reducen los resultados)
+            $limite = (!empty($nivel_educativo) || !empty($grado_nombre) || !empty($seccion_nombre)) ? 50 : 15;
+            $alumnos = $query->orderBy('alumnos.apellido_paterno')->limit($limite)->get();
 
             \Log::info('Alumnos encontrados', ['count' => $alumnos->count()]);
 

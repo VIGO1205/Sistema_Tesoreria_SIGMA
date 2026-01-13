@@ -1,6 +1,7 @@
 
 let searchTimeout = null;
 let alumnoSeleccionado = null;
+let ultimosResultados = []; // Almacenar los últimos resultados de búsqueda
 
 document.addEventListener('DOMContentLoaded', function() {
     const inputBuscar = document.getElementById('buscar_alumno');
@@ -27,13 +28,42 @@ document.addEventListener('DOMContentLoaded', function() {
     const contenedorFiltroGrado = document.getElementById('contenedorFiltroGrado');
     const contenedorFiltroSeccion = document.getElementById('contenedorFiltroSeccion');
 
-    // Cargar datos iniciales
-    cargarGrados();
-    cargarSecciones();
-    
-    // Botón principal: Mostrar/Ocultar panel de filtros
-    btnActivarFiltros.addEventListener('click', function() {
-        contenedorFiltros.classList.toggle('hidden');
+    // ===== NUEVA LÓGICA: Filtrar opciones de grado según nivel seleccionado =====
+    filtroNivel.addEventListener('change', function() {
+        const nivelSeleccionado = this.value;
+        const todasLasOpciones = filtroGrado.querySelectorAll('option');
+        const valorActualGrado = filtroGrado.value;
+        let opcionActualEsValida = false;
+
+        todasLasOpciones.forEach(option => {
+            if (option.value === '') {
+                // "Todos los grados" siempre visible
+                option.style.display = '';
+                return;
+            }
+
+            const nivelesPermitidos = option.getAttribute('data-nivel');
+            
+            if (!nivelSeleccionado || nivelSeleccionado === '') {
+                // Si nivel es "Todos", mostrar todos los grados
+                option.style.display = '';
+            } else {
+                // Mostrar solo grados compatibles con el nivel seleccionado
+                if (nivelesPermitidos && nivelesPermitidos.includes(nivelSeleccionado)) {
+                    option.style.display = '';
+                    if (option.value === valorActualGrado) {
+                        opcionActualEsValida = true;
+                    }
+                } else {
+                    option.style.display = 'none';
+                }
+            }
+        });
+
+        // Si la opción actual de grado ya no es válida, resetear a "Todos"
+        if (!opcionActualEsValida && valorActualGrado !== '') {
+            filtroGrado.value = '';
+        }
     });
 
     // Activar filtro de Nivel Educativo
@@ -43,11 +73,18 @@ document.addEventListener('DOMContentLoaded', function() {
             contenedorFiltroNivel.classList.add('hidden');
             btnActivarNivel.classList.remove('border-green-500', 'bg-green-100', 'dark:bg-green-900/30');
             filtroNivel.value = '';
+            // Resetear grados cuando se desactiva nivel
+            filtroNivel.dispatchEvent(new Event('change'));
         } else {
             contenedorFiltroNivel.classList.remove('hidden');
             contenedorFiltroNivel.classList.add('flex');
             btnActivarNivel.classList.add('border-green-500', 'bg-green-100', 'dark:bg-green-900/30');
         }
+    });
+    
+    // Botón principal: Mostrar/Ocultar panel de filtros
+    btnActivarFiltros.addEventListener('click', function() {
+        contenedorFiltros.classList.toggle('hidden');
     });
 
     // Activar filtro de Grado
@@ -57,7 +94,6 @@ document.addEventListener('DOMContentLoaded', function() {
             contenedorFiltroGrado.classList.add('hidden');
             btnActivarGrado.classList.remove('border-indigo-500', 'bg-indigo-100', 'dark:bg-indigo-900/30');
             filtroGrado.value = '';
-            cargarSecciones();
         } else {
             contenedorFiltroGrado.classList.remove('hidden');
             contenedorFiltroGrado.classList.add('flex');
@@ -79,16 +115,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Cuando cambia el grado, cargar secciones de ese grado
-    filtroGrado.addEventListener('change', function() {
-        const gradoSeleccionado = this.value;
-        if (gradoSeleccionado) {
-            cargarSecciones(gradoSeleccionado);
-        } else {
-            cargarSecciones();
-        }
-    });
-    
     // Botón para buscar con filtros (sin necesidad de escribir)
     btnBuscarConFiltros.addEventListener('click', function() {
         buscarAlumnos(''); // Búsqueda vacía con solo filtros
@@ -123,6 +149,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // Mostrar resultados previos al hacer focus en el input de búsqueda
+    inputBuscar.addEventListener('focus', function() {
+        const termino = this.value.trim();
+        const hayFiltros = filtroNivel.value || filtroGrado.value || filtroSeccion.value;
+        
+        // Si hay texto o filtros activos, y hay resultados guardados, mostrarlos
+        if ((termino.length >= 2 || hayFiltros) && ultimosResultados.length > 0) {
+            mostrarResultados(ultimosResultados);
+        }
+    });
+
     // Cerrar dropdown al hacer clic fuera
     document.addEventListener('click', function(e) {
         if (!inputBuscar.contains(e.target) && !resultadosContainer.contains(e.target)) {
@@ -136,6 +173,7 @@ document.addEventListener('DOMContentLoaded', function() {
         resultadosContainer.classList.add('hidden');
         errorBuscar.classList.add('hidden');
         alumnoSeleccionado = null;
+        ultimosResultados = []; // Limpiar los resultados guardados
         
         // Llamar a la función de limpiar del otro script si existe
         if (typeof limpiarFormulario === 'function') {
@@ -148,19 +186,17 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     function buscarAlumnos(termino) {
         const nivel_educativo = filtroNivel.value || '';
-        const grado_id = filtroGrado.value || '';
-        const seccion_id = filtroSeccion.value || '';
+        const grado_nombre = filtroGrado.value || ''; // Ahora envía el nombre del grado
+        const seccion_nombre = filtroSeccion.value || ''; // Envía el nombre de la sección
 
         // Validar que haya al menos un criterio de búsqueda
-        if (!termino && !nivel_educativo && !grado_id && !seccion_id) {
+        if (!termino && !nivel_educativo && !grado_nombre && !seccion_nombre) {
             errorBuscar.textContent = 'Debe ingresar un nombre o seleccionar al menos un filtro';
             errorBuscar.classList.remove('hidden');
             return;
         }
 
-
-
-        fetch(`/orden-pago/buscar-alumnos-nombre?termino=${encodeURIComponent(termino)}&nivel_educativo=${encodeURIComponent(nivel_educativo)}&grado_id=${encodeURIComponent(grado_id)}&seccion_id=${encodeURIComponent(seccion_id)}`, {
+        fetch(`/orden-pago/buscar-alumnos-nombre?termino=${encodeURIComponent(termino)}&nivel_educativo=${encodeURIComponent(nivel_educativo)}&grado_id=${encodeURIComponent(grado_nombre)}&seccion_id=${encodeURIComponent(seccion_nombre)}`, {
             method: 'GET',
             headers: {
                 'Accept': 'application/json',
@@ -204,6 +240,7 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     function mostrarResultados(alumnos) {
         resultadosContainer.innerHTML = '';
+        ultimosResultados = alumnos; // Guardar los resultados para mostrarlos después
         
         alumnos.forEach(alumno => {
             const item = document.createElement('div');
@@ -289,83 +326,5 @@ document.addEventListener('DOMContentLoaded', function() {
                 btnBuscar.click();
             }
         }
-    }
-
-    /**
-     * Cargar grados para el filtro
-     */
-    function cargarGrados() {
-        fetch('/orden-pago/obtener-grados', {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-
-                if (data.success && data.grados) {
-                    filtroGrado.innerHTML = '<option value="">Todos los grados</option>';
-                    data.grados.forEach(grado => {
-                        const option = document.createElement('option');
-                        option.value = grado.id_grado;
-                        option.textContent = grado.nombre_grado;
-                        filtroGrado.appendChild(option);
-                    });
-                }
-            })
-            .catch(error => {
-
-            });
-    }
-
-    /**
-     * Cargar secciones para el filtro
-     */
-    function cargarSecciones(grado_id = '') {
-        const url = grado_id 
-            ? `/orden-pago/obtener-secciones?grado_id=${encodeURIComponent(grado_id)}`
-            : '/orden-pago/obtener-secciones';
-
-        fetch(url, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-
-                if (data.success && data.secciones) {
-                    const valorActual = filtroSeccion.value;
-                    filtroSeccion.innerHTML = '<option value="">Todas las secciones</option>';
-                    data.secciones.forEach(seccion => {
-                        const option = document.createElement('option');
-                        option.value = seccion.nombreSeccion;
-                        option.textContent = seccion.nombreSeccion;
-                        filtroSeccion.appendChild(option);
-                    });
-                    
-                    // Mantener la selección si existía
-                    if (valorActual && filtroSeccion.querySelector(`option[value="${valorActual}"]`)) {
-                        filtroSeccion.value = valorActual;
-                    }
-                }
-            })
-            .catch(error => {
-
-            });
     }
 });

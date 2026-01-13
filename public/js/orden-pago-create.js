@@ -90,6 +90,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const listaDeudas = document.getElementById('listaDeudasCheckbox');
         if (listaDeudas) listaDeudas.innerHTML = '';
         
+        // Resetear botón "Seleccionar todas"
+        const iconSeleccionarTodas = document.getElementById('iconSeleccionarTodas');
+        if (iconSeleccionarTodas) {
+            iconSeleccionarTodas.classList.remove('opacity-100');
+            iconSeleccionarTodas.classList.add('opacity-0');
+        }
+        
         const inputAdelantar = document.getElementById('meses_adelantar');
         if (inputAdelantar) {
             inputAdelantar.value = '0';
@@ -437,8 +444,36 @@ document.addEventListener('DOMContentLoaded', function() {
                         listaDeudas.classList.remove('border-red-500');
                     }
                     actualizarResumen();
+                    actualizarBotonSeleccionarTodas();
                 });
             });
+            
+            // Configurar botón elegante "Seleccionar todas"
+            const btnSeleccionarTodas = document.getElementById('btnSeleccionarTodasDeudas');
+            const iconSeleccionarTodas = document.getElementById('iconSeleccionarTodas');
+            let todasSeleccionadas = false;
+            
+            if (btnSeleccionarTodas) {
+                btnSeleccionarTodas.addEventListener('click', function() {
+                    const checkboxesDeudas = document.querySelectorAll('.deuda-checkbox:not(:disabled)');
+                    todasSeleccionadas = !todasSeleccionadas;
+                    
+                    checkboxesDeudas.forEach(checkbox => {
+                        checkbox.checked = todasSeleccionadas;
+                    });
+                    
+                    // Actualizar ícono con animación
+                    if (todasSeleccionadas) {
+                        iconSeleccionarTodas.classList.remove('opacity-0');
+                        iconSeleccionarTodas.classList.add('opacity-100');
+                    } else {
+                        iconSeleccionarTodas.classList.remove('opacity-100');
+                        iconSeleccionarTodas.classList.add('opacity-0');
+                    }
+                    
+                    actualizarResumen();
+                });
+            }
             
             formOrdenPago.dataset.porcentajeDescuento = data.politica_descuento || 10;
             
@@ -1123,4 +1158,33 @@ document.addEventListener('DOMContentLoaded', function() {
         if (contenedorFecha) contenedorFecha.classList.remove('hidden');
         if (contenedorResumen) contenedorResumen.classList.remove('hidden');
     });
+    
+    /**
+     * Actualizar el estado visual del botón "Seleccionar todas"
+     */
+    function actualizarBotonSeleccionarTodas() {
+        const btnSeleccionarTodas = document.getElementById('btnSeleccionarTodasDeudas');
+        const iconSeleccionarTodas = document.getElementById('iconSeleccionarTodas');
+        if (!btnSeleccionarTodas || !iconSeleccionarTodas) return;
+        
+        const checkboxesDeudas = document.querySelectorAll('.deuda-checkbox:not(:disabled)');
+        const checkboxesSeleccionados = document.querySelectorAll('.deuda-checkbox:not(:disabled):checked');
+        
+        if (checkboxesDeudas.length === 0) {
+            iconSeleccionarTodas.classList.remove('opacity-100');
+            iconSeleccionarTodas.classList.add('opacity-0');
+            return;
+        }
+        
+        // Todas seleccionadas
+        if (checkboxesSeleccionados.length === checkboxesDeudas.length) {
+            iconSeleccionarTodas.classList.remove('opacity-0');
+            iconSeleccionarTodas.classList.add('opacity-100');
+            todasSeleccionadas = true;
+        } else {
+            iconSeleccionarTodas.classList.remove('opacity-100');
+            iconSeleccionarTodas.classList.add('opacity-0');
+            todasSeleccionadas = false;
+        }
+    }
 });
