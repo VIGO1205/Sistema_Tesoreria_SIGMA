@@ -8,14 +8,14 @@
     @if($alumno)
         {{-- Componente de información del alumno --}}
         <li class="mb-4" :class="sidebarToggle ? 'lg:px-0' : 'px-4'">
-            
+
             {{-- Vista completa (sidebar expandido) --}}
             <div class="group relative bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 rounded-xl p-4 border-2 border-blue-200 dark:border-gray-600 shadow-md hover:shadow-xl transition-all duration-300"
                  :class="sidebarToggle ? 'lg:hidden' : ''">
-                
+
                 {{-- Decoración de fondo --}}
                 <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-400/10 to-indigo-400/10 rounded-full -mr-12 -mt-12"></div>
-                
+
                 <div class="relative">
                     {{-- Foto del alumno --}}
                     <div class="flex justify-center mb-3">
@@ -131,11 +131,11 @@
                 'name' => 'Matrículas',
                 'items' => [
                     'Ver matrículas del Alumno',
-                    'Realizar Matrícula',
+                    'Realizar Prematrícula',
                 ],
                 'links' => [
                     'Ver matrículas del Alumno' => 'familiar_matricula_view',
-                    'Realizar Matrícula' => 'familiar_matricula_prematricula_create',
+                    'Realizar Prematrícula' => 'familiar_matricula_prematricula_create',
                 ],
                 'icon' => 'birrete'
             ])
