@@ -127,18 +127,33 @@
 
         {{-- Componente de Matrículas --}}
         @can('access-resource', 'matriculas')
-            @include('components.para-sidebar.dropdown-button', [
-                'name' => 'Matrículas',
-                'items' => [
-                    'Ver matrículas del Alumno',
-                    'Realizar Prematrícula',
-                ],
-                'links' => [
-                    'Ver matrículas del Alumno' => 'familiar_matricula_view',
-                    'Realizar Prematrícula' => 'familiar_matricula_prematricula_create',
-                ],
-                'icon' => 'birrete'
-            ])
+            @if($matriculaActiva)
+                {{-- Alumno YA está matriculado: solo mostrar "Ver matrículas del Alumno" --}}
+                @include('components.para-sidebar.dropdown-button', [
+                    'name' => 'Matrículas',
+                    'items' => [
+                        'Ver matrículas del Alumno',
+                    ],
+                    'links' => [
+                        'Ver matrículas del Alumno' => 'familiar_matricula_view',
+                    ],
+                    'icon' => 'birrete'
+                ])
+            @else
+                {{-- Alumno NO está matriculado: mostrar ambas opciones --}}
+                @include('components.para-sidebar.dropdown-button', [
+                    'name' => 'Matrículas',
+                    'items' => [
+                        'Ver matrículas del Alumno',
+                        'Realizar Prematrícula',
+                    ],
+                    'links' => [
+                        'Ver matrículas del Alumno' => 'familiar_matricula_view',
+                        'Realizar Prematrícula' => 'familiar_matricula_prematricula_create',
+                    ],
+                    'icon' => 'birrete'
+                ])
+            @endif
         @endcan
 
         {{-- Componente de Pagos --}}
