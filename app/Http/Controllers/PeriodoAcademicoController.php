@@ -16,14 +16,24 @@ use App\Helpers\Tables\SearchBoxComponent;
 use App\Helpers\Tables\TableButtonComponent;
 use App\Helpers\Tables\TableComponent;
 use App\Helpers\Tables\TablePaginator;
+use App\Interfaces\ICronogramaAcademicoService;
 use App\Interfaces\IExporterService;
 use App\Interfaces\IExportRequestFactory;
 use App\Models\Configuracion;
+use App\Models\EstadoPeriodoAcademico;
 use App\Models\PeriodoAcademico;
 use Illuminate\Http\Request;
 
 class PeriodoAcademicoController extends Controller
 {
+
+    protected ICronogramaAcademicoService $cronogramaService;
+
+    public function __construct(ICronogramaAcademicoService $cronogramaService)
+    {
+        $this->cronogramaService = $cronogramaService;
+    }
+
     private static function doSearch($sqlColumns, $search, $maxEntriesShow, $appliedFilters = [])
     {
         $columnMap = [
@@ -31,7 +41,7 @@ class PeriodoAcademicoController extends Controller
             'Nombre' => 'nombre',
         ];
 
-        $query = PeriodoAcademico::where('estado', '=', true);
+        $query = PeriodoAcademico::query()->whereNot('id_estado_periodo_academico', '=', EstadoPeriodoAcademico::ANULADO)->orderByDesc('nombre');
 
         FilteredSearchQuery::fromQuery($query, $sqlColumns, $search, $appliedFilters, $columnMap);
 
@@ -75,7 +85,8 @@ class PeriodoAcademicoController extends Controller
         $content->addButton($createNewEntryButton);
 
         $paginatorRowsSelector = new PaginatorRowsSelectorComponent();
-        if ($long) $paginatorRowsSelector = new PaginatorRowsSelectorComponent([100]);
+        if ($long)
+            $paginatorRowsSelector = new PaginatorRowsSelectorComponent([100]);
         $paginatorRowsSelector->valueSelected = $params->showing;
         $content->paginatorRowsSelector($paginatorRowsSelector);
 
@@ -88,7 +99,7 @@ class PeriodoAcademicoController extends Controller
             ->cautionMessage('¿Estás seguro?')
             ->action('Estás eliminando el Período Académico')
             ->columns(['Nombre', 'Estado'])
-            ->rows([ '', ''])
+            ->rows(['', ''])
             ->lastWarningMessage('Borrar esto afectará a todas las matrículas vinculadas a este período.')
             ->confirmButton('Sí, bórralo')
             ->cancelButton('Cancelar')
@@ -109,20 +120,17 @@ class PeriodoAcademicoController extends Controller
         $filterConfig->filters = ["ID", "Nombre"];
         $content->filterConfig = $filterConfig;
 
-        // Obtener período actual
-        $periodoActualId = Configuracion::obtener('ID_PERIODO_ACADEMICO_ACTUAL');
-
         $table = new TableComponent();
         $table->columns = ["ID", "Nombre", "Estado"];
         $table->rows = [];
 
         foreach ($query as $periodo) {
-            $esActual = $periodo->id_periodo_academico == $periodoActualId;
-            
+            $esActual = $periodo->id_periodo_academico == $this->cronogramaService->periodoActual()->getKey();
+
             array_push($table->rows, [
                 $periodo->id_periodo_academico,
                 $periodo->nombre,
-                $esActual ? '✅ Actual' : '—',
+                $esActual ? 'ACTUAL' : $periodo->estado->nombre,
             ]);
         }
 
@@ -170,36 +178,19 @@ class PeriodoAcademicoController extends Controller
 
         $periodo = PeriodoAcademico::create([
             'nombre' => $request->input('nombre'),
-            'estado' => true,
+            'id_estado_periodo_academico' => $request->input('estado_del_período')
         ]);
 
-        // Si es el primer período, establecerlo como actual
-        if (PeriodoAcademico::count() === 1) {
-            $periodo->establecerComoActual();
+        if (PeriodoAcademico::count() == 1) {
+            $this->cronogramaService->establecerPeriodoActual($periodo);
         }
 
         return redirect()->route('periodo_academico_view', ['created' => true]);
     }
 
-    public function edit(Request $request, $id)
+    public function edit(Request $request, int $id)
     {
-        if (!isset($id)) {
-            return redirect(route('periodo_academico_view'));
-        }
-
-        $periodo = PeriodoAcademico::findOrFail($id);
-        $periodoActualId = Configuracion::obtener('ID_PERIODO_ACADEMICO_ACTUAL');
-
-        $data = [
-            'return' => route('periodo_academico_view', ['abort' => true]),
-            'id' => $id,
-            'es_actual' => $periodo->id_periodo_academico == $periodoActualId,
-            'default' => [
-                'nombre' => $periodo->nombre,
-            ]
-        ];
-
-        return view('gestiones.periodo_academico.edit', compact('data'));
+        return view('gestiones.periodo_academico.edit', ['id' => $id]);
     }
 
     public function editEntry(Request $request, $id)
@@ -236,20 +227,12 @@ class PeriodoAcademicoController extends Controller
 
         $periodo = PeriodoAcademico::findOrFail($id);
 
-        // Verificar si es el período actual
-        $periodoActualId = Configuracion::obtener('ID_PERIODO_ACADEMICO_ACTUAL');
-        if ($periodo->id_periodo_academico == $periodoActualId) {
+        if ($this->cronogramaService->esActual($periodo)) {
             return redirect()->route('periodo_academico_view')
-                ->with('error', 'No se puede eliminar el período académico actual.');
+                ->withErrors('No se puede eliminar el período académico actual.');
         }
 
-        // Verificar si tiene matrículas asociadas
-        if ($periodo->matriculas()->count() > 0) {
-            return redirect()->route('periodo_academico_view')
-                ->with('error', 'No se puede eliminar el período porque tiene matrículas asociadas.');
-        }
-
-        $periodo->update(['estado' => false]);
+        $periodo->anular();
 
         return redirect()->route('periodo_academico_view', ['deleted' => true]);
     }
@@ -257,10 +240,9 @@ class PeriodoAcademicoController extends Controller
     public function establecerActual(Request $request, $id)
     {
         $periodo = PeriodoAcademico::findOrFail($id);
-        $periodo->establecerComoActual();
+        $this->cronogramaService->establecerPeriodoActual($periodo);
 
-        return redirect()->route('periodo_academico_view')
-            ->with('success', 'El período "' . $periodo->nombre . '" ha sido establecido como actual.');
+        return redirect()->route('periodo_academico_view');
     }
 
     public function export(Request $request, IExportRequestFactory $requestFactory, IExporterService $exporterService)

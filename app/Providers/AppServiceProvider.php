@@ -6,6 +6,7 @@ use App\Helpers\Exporter\Factories\ExporterFactory;
 use App\Helpers\Exporter\Factories\ExportRequestFactory;
 use App\Helpers\Exporter\Services\ExporterService;
 use App\Http\Controllers\AdministrativoController;
+use App\Interfaces\ICronogramaAcademicoService;
 use App\Interfaces\IExporterFactory;
 use App\Interfaces\IExporterService;
 use App\Interfaces\IExportRequestFactory;
@@ -14,6 +15,7 @@ use App\Models\Alumno;
 use App\Models\Catedra;
 use App\Models\ConceptoAccion;
 use App\Models\ConceptoPago;
+use App\Models\Configuracion;
 use App\Models\Curso;
 use App\Models\DepartamentoAcademico;
 use App\Models\DetallePago;
@@ -22,6 +24,7 @@ use App\Models\Familiar;
 use App\Models\Matricula;
 use App\Models\NivelEducativo;
 use App\Models\Pago;
+use App\Models\PeriodoAcademico;
 use App\Models\Personal;
 use App\Models\Seccion;
 use App\Models\User;
@@ -41,6 +44,7 @@ use App\Observers\PagoObserver;
 use App\Observers\PersonalObserver;
 use App\Observers\SeccionObserver;
 use App\Observers\UserObserver;
+use App\Services\Cronograma\CronogramaAcademicoService;
 use App\Services\Matricula\GeneraConstanciaMatricula;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Gate;
@@ -56,6 +60,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(IExporterService::class, ExporterService::class);
         $this->app->singleton(GeneraConstanciaMatricula::class, function () {
             return new GeneraConstanciaMatricula('constancias.matricula');
+        });
+        $this->app->singleton(ICronogramaAcademicoService::class, function () {
+            $periodoAcademico = PeriodoAcademico::find(Configuracion::obtener(Configuracion::ID_PERIODO_ACADEMICO_ACTUAL));
+            return new CronogramaAcademicoService($periodoAcademico);
         });
     }
 
