@@ -12,7 +12,7 @@ use App\Helpers\Home\Familiar\FamiliarSidebarComponent;
 use App\Http\Controllers\Home\Utils;
 use App\Models\Grado;
 use App\Models\Matricula;
-use App\Models\Seccion; 
+use App\Models\Seccion;
 use App\Helpers\CRUDTablePage;
 use App\Helpers\ExcelExportHelper;
 use App\Helpers\FilteredSearchQuery;
@@ -47,14 +47,14 @@ class FamiliarPagosController extends Controller
         $requested = $request->session()->get('alumno');
         $query->where('id_alumno', '=', $requested->getKey());
 
-        
+
         FilteredSearchQuery::fromQuery($query, $sqlColumns, $search, $appliedFilters, $columnMap);
 
         if ($maxEntriesShow == null) return $query->get();
 
         return $query->paginate($maxEntriesShow);
     }
-    
+
     public function indexDeudas(Request $request, $long = false){
         $requested = $request->session()->get('alumno');
 
@@ -66,19 +66,22 @@ class FamiliarPagosController extends Controller
         $resource = 'pagos';
 
         $params = RequestHelper::extractSearchParams($request);
-        
+
         $header = Utils::crearHeaderConAlumnos($request);
 
         $page = CRUDTablePage::new()
             ->title("Deudas")
             ->header($header)
             ->sidebar(new FamiliarSidebarComponent());
-        
+
         $content = CRUDTableComponent::new()
             ->title("Deudas de tu alumno");
 
         $filterButton = new TableButtonComponent("tablesv2.buttons.filtros");
         $content->addButton($filterButton);
+
+        $pagoButton = new TableButtonComponent("tablesv2.buttons.realizar-pago");
+        $content->addButton($pagoButton);
 
         /* Paginador */
         $paginatorRowsSelector = new PaginatorRowsSelectorComponent();
@@ -93,7 +96,7 @@ class FamiliarPagosController extends Controller
         $content->searchBox($searchBox);
 
         /* Lógica del controller */
-        
+
         $query = static::doSearchDeudas($sqlColumns, $params->search, $params->showing, $params->applied_filters, $request);
 
         if ($params->page > $query->lastPage()){
@@ -115,7 +118,7 @@ class FamiliarPagosController extends Controller
             "Periodo" => $periodosExistentes,
         ];
         $content->filterConfig = $filterConfig;
-        
+
         $table = new TableComponent();
         $table->columns = ["ID", "Concepto", "Periodo", "Fecha Límite", "Monto"];
         $table->rows = [];
@@ -132,7 +135,7 @@ class FamiliarPagosController extends Controller
                 $deuda->periodo,
                 \Carbon\Carbon::parse($deuda->fecha_limite)->format('d/m/Y'),
                 $deuda->monto_total,
-            ]); 
+            ]);
         }
 
         $paginator = new TablePaginator($params->page, $query->lastPage(), []);
@@ -165,7 +168,7 @@ class FamiliarPagosController extends Controller
 
         return $query->paginate($maxEntriesShow);
     }
-    
+
     public function indexPagos(Request $request, $long = false){
         $requested = $request->session()->get('alumno');
 
@@ -177,14 +180,14 @@ class FamiliarPagosController extends Controller
         $resource = 'pagos';
 
         $params = RequestHelper::extractSearchParams($request);
-        
+
         $header = Utils::crearHeaderConAlumnos($request);
 
         $page = CRUDTablePage::new()
             ->title("Pagos")
             ->header($header)
             ->sidebar(new FamiliarSidebarComponent());
-        
+
         $content = CRUDTableComponent::new()
             ->title("Pagos de tu alumno");
 
@@ -204,7 +207,7 @@ class FamiliarPagosController extends Controller
         $content->searchBox($searchBox);
 
         /* Lógica del controller */
-        
+
         $query = static::doSearchPagos($sqlColumns, $params->search, $params->showing, $params->applied_filters, $request);
 
         if ($params->page > $query->lastPage()){
@@ -225,7 +228,7 @@ class FamiliarPagosController extends Controller
             "Por el periodo" => $periodosExistentes,
         ];
         $content->filterConfig = $filterConfig;
-        
+
         $table = new TableComponent();
         $table->columns = ["ID", "Período", "Fecha de Pago", "Monto", "Observaciones"];
         $table->rows = [];
@@ -238,7 +241,7 @@ class FamiliarPagosController extends Controller
                 \Carbon\Carbon::parse($pago->fecha_pago)->format('d/m/Y'),
                 $pago->monto,
                 $pago->observaciones ?? 'No registra.'
-            ]); 
+            ]);
         }
 
         $paginator = new TablePaginator($params->page, $query->lastPage(), []);

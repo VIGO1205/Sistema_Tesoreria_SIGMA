@@ -30,7 +30,7 @@
 
 
 
-        
+
         <form method="POST" id="form" action="" class="mt-8">
             @method('PUT')
             @csrf
@@ -123,10 +123,10 @@
                                         </svg>
                                     </div>
                                 </div>
-                                
+
                                 {{-- Mensaje de error (posición absoluta) --}}
                                 <p id="error_buscar_alumno" class="absolute left-0 -bottom-5 text-xs text-red-500 dark:text-red-400 hidden"></p>
-                                
+
                                 {{-- Dropdown de resultados --}}
                                 <div id="resultados_busqueda" class="hidden absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg shadow-lg max-h-96 overflow-y-auto">
                                     {{-- Los resultados se insertarán aquí dinámicamente --}}
@@ -163,35 +163,21 @@
                                 </svg>
                                 Año Escolar
                             </label>
-                            @php
-                                $field = 'id_periodo_academico';
-                                $label = 'Año Escolar';
-                                $required = true;
-                                $defaultValue = old('id_periodo_academico');
-                                $options = $data['periodosAcademicos'] ?? [];
-                                $idAttribute = 'id';
-                                $textAttribute = 'descripcion';
-                                $errorMessage = $errors->first('id_periodo_academico');
-                            @endphp
-                            @component('components.combo', [
-                                'field' => $field,
-                                'label' => '',
-                                'required' => $required,
-                                'defaultValue' => $defaultValue,
-                                'options' => $options,
-                                'idAttribute' => $idAttribute,
-                                'textAttribute' => $textAttribute,
-                                'errorMessage' => $errorMessage,
-                                'readonly' => false
+                            @include('components.forms.combo', [
+                                'label' => 'Año Escolar',
+                                'name' => 'id_periodo_academico',
+                                'error' => $errors->first('id_periodo_academico') ?? false,
+                                'value' => old('id_periodo_academico'),
+                                'options' => $data['periodosAcademicos'] ?? [],
+                                'options_attributes' => ['id', 'descripcion']
                             ])
-                            @endcomponent
                         </div>
                     </div>
                 </div>
 
                 {{-- Campo oculto para ID del alumno --}}
                 <input type="hidden" id="alumno" name="alumno" value="{{ old('alumno') }}">
-                
+
                 {{-- Mensaje de advertencia para alumnos ya matriculados --}}
                 <div id="mensajeAlumnoMatriculado" class="hidden mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 rounded-lg">
                     <div class="flex items-start gap-3">
@@ -237,7 +223,7 @@
                             </div>
                             <p class="mt-3 text-xs text-center text-gray-500 dark:text-gray-400">Fotografía del estudiante</p>
                         </div>
-                        
+
                         {{-- Datos del estudiante --}}
                         <div class="lg:col-span-9">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -403,28 +389,28 @@
         const contenedorFiltroCodigo = document.getElementById('contenedorFiltroCodigo');
         const btnBuscarConFiltros = document.getElementById('btnBuscarConFiltros');
         const btnLimpiarBusqueda = document.getElementById('btnLimpiarBusqueda');
-        
+
         const buscarAlumnoInput = document.getElementById('buscar_alumno');
         const filtroDNI = document.getElementById('filtro_dni');
         const filtroCodigo = document.getElementById('filtro_codigo');
         const resultadosBusqueda = document.getElementById('resultados_busqueda');
         const loadingBusqueda = document.getElementById('loading_busqueda');
         const errorBuscarAlumno = document.getElementById('error_buscar_alumno');
-        
+
         const alumnoHidden = document.getElementById('alumno');
         const nombreAlumnoDisplay = document.getElementById('nombre_alumno_display');
         const dniAlumnoDisplay = document.getElementById('dni_alumno_display');
-        
+
         let timeoutBusqueda = null;
         let ultimosResultados = []; // Almacenar los últimos resultados
-        
+
         // Toggle contenedor de filtros
         if (btnActivarFiltros) {
             btnActivarFiltros.addEventListener('click', function() {
                 contenedorFiltros.classList.toggle('hidden');
             });
         }
-        
+
         // Activar/desactivar filtros individuales
         if (btnActivarDNI) {
             btnActivarDNI.addEventListener('click', function() {
@@ -438,7 +424,7 @@
                 }
             });
         }
-        
+
         if (btnActivarCodigo) {
             btnActivarCodigo.addEventListener('click', function() {
                 contenedorFiltroCodigo.classList.toggle('hidden');
@@ -451,13 +437,13 @@
                 }
             });
         }
-        
+
         // Función para realizar la búsqueda
         function realizarBusqueda() {
             const nombre = buscarAlumnoInput.value.trim();
             const dni = filtroDNI.value.trim();
             const codigo = filtroCodigo.value.trim();
-            
+
             // Validar que al menos haya un criterio de búsqueda
             if (!nombre && !dni && !codigo) {
                 errorBuscarAlumno.textContent = 'Ingrese al menos un criterio de búsqueda';
@@ -465,14 +451,14 @@
                 resultadosBusqueda.classList.add('hidden');
                 return;
             }
-            
+
             errorBuscarAlumno.classList.add('hidden');
             loadingBusqueda.classList.remove('hidden');
             resultadosBusqueda.classList.add('hidden');
-            
+
             // Priorizar: si hay DNI, buscar por DNI; si hay código, buscar por código; sino por nombre
             const termino = dni || codigo || nombre;
-            
+
             fetch(`/orden-pago/buscar-alumnos-nombre?termino=${encodeURIComponent(termino)}`, {
                 headers: {
                     'Accept': 'application/json',
@@ -487,14 +473,14 @@
                 })
                 .then(data => {
                     loadingBusqueda.classList.add('hidden');
-                    
+
                     console.log('Respuesta del servidor:', data);
-                    
+
                     if (data.success && data.alumnos && data.alumnos.length > 0) {
                         mostrarResultados(data.alumnos);
                     } else {
                         errorBuscarAlumno.innerHTML = `
-                            ${data.message || 'No se encontraron estudiantes con los criterios especificados'}. 
+                            ${data.message || 'No se encontraron estudiantes con los criterios especificados'}.
                             <a href="{{ route('alumno_create') }}" class="text-blue-600 dark:text-blue-400 hover:underline font-semibold">
                                 ¿Desea crear un nuevo alumno?
                             </a>
@@ -506,7 +492,7 @@
                     console.error('Error:', error);
                     loadingBusqueda.classList.add('hidden');
                     errorBuscarAlumno.innerHTML = `
-                        Error al buscar estudiantes. Intente nuevamente. 
+                        Error al buscar estudiantes. Intente nuevamente.
                         <a href="{{ route('alumno_create') }}" class="text-blue-600 dark:text-blue-400 hover:underline font-semibold">
                             ¿Desea crear un nuevo alumno?
                         </a>
@@ -514,12 +500,12 @@
                     errorBuscarAlumno.classList.remove('hidden');
                 });
         }
-        
+
         // Función para mostrar resultados
         function mostrarResultados(alumnos) {
             resultadosBusqueda.innerHTML = '';
             ultimosResultados = alumnos; // Guardar los resultados
-            
+
             alumnos.forEach(alumno => {
                 const div = document.createElement('div');
                 div.className = 'p-4 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors border-b border-gray-200 dark:border-gray-600 last:border-b-0';
@@ -549,36 +535,36 @@
                         </span>
                     </div>
                 `;
-                
+
                 div.addEventListener('click', function() {
                     seleccionarAlumno(alumno);
                 });
-                
+
                 resultadosBusqueda.appendChild(div);
             });
-            
+
             resultadosBusqueda.classList.remove('hidden');
         }
-        
+
         // Función para seleccionar un alumno
         function seleccionarAlumno(alumno) {
             alumnoHidden.value = alumno.id_alumno;
             nombreAlumnoDisplay.value = alumno.nombre_completo;
             dniAlumnoDisplay.value = alumno.dni || 'N/A';
-            
+
             // Actualizar nuevos campos
             const codigoAlumnoDisplay = document.getElementById('codigo_alumno_display');
             const anioIngresoAlumnoDisplay = document.getElementById('anio_ingreso_alumno_display');
             const fotoContainer = document.getElementById('foto_alumno_container');
-            
+
             if (codigoAlumnoDisplay) {
                 codigoAlumnoDisplay.value = alumno.codigo_educando || 'N/A';
             }
-            
+
             if (anioIngresoAlumnoDisplay) {
                 anioIngresoAlumnoDisplay.value = alumno.anio_ingreso || 'N/A';
             }
-            
+
             // Actualizar foto del alumno
             if (fotoContainer) {
                 if (alumno.foto && alumno.foto !== '') {
@@ -604,16 +590,16 @@
                     }
                 }
             }
-            
+
             resultadosBusqueda.classList.add('hidden');
             buscarAlumnoInput.value = alumno.nombre_completo;
-            
+
             // Verificar si el alumno ya está matriculado
             const mensajeMatriculado = document.getElementById('mensajeAlumnoMatriculado');
             const detalleMatricula = document.getElementById('detalleMatriculaActual');
             const btnTop = document.getElementById('btnCrearMatriculaTop');
             const btnBottom = document.getElementById('btnCrearMatriculaBottom');
-            
+
             if (alumno.id_matricula) {
                 // Alumno ya matriculado - mostrar advertencia y deshabilitar botones
                 if (mensajeMatriculado) {
@@ -632,16 +618,16 @@
                 if (btnTop) btnTop.disabled = false;
                 if (btnBottom) btnBottom.disabled = false;
             }
-            
+
             // Cargar información financiera
             cargarInfoFinanciera(alumno.id_alumno);
         }
-        
+
         // Búsqueda por nombre con debounce
         if (buscarAlumnoInput) {
             buscarAlumnoInput.addEventListener('input', function() {
                 clearTimeout(timeoutBusqueda);
-                
+
                 const nombre = this.value.trim();
                 if (nombre.length >= 3) {
                     timeoutBusqueda = setTimeout(realizarBusqueda, 500);
@@ -650,7 +636,7 @@
                     errorBuscarAlumno.classList.add('hidden');
                 }
             });
-            
+
             // Mostrar resultados previos al hacer focus
             buscarAlumnoInput.addEventListener('focus', function() {
                 const nombre = this.value.trim();
@@ -660,12 +646,12 @@
                 }
             });
         }
-        
+
         // Botón buscar con filtros
         if (btnBuscarConFiltros) {
             btnBuscarConFiltros.addEventListener('click', realizarBusqueda);
         }
-        
+
         // Botón limpiar
         if (btnLimpiarBusqueda) {
             btnLimpiarBusqueda.addEventListener('click', function() {
@@ -675,15 +661,15 @@
                 alumnoHidden.value = '';
                 nombreAlumnoDisplay.value = '';
                 dniAlumnoDisplay.value = '';
-                
+
                 // Limpiar nuevos campos
                 const codigoAlumnoDisplay = document.getElementById('codigo_alumno_display');
                 const anioIngresoAlumnoDisplay = document.getElementById('anio_ingreso_alumno_display');
                 const fotoContainer = document.getElementById('foto_alumno_container');
-                
+
                 if (codigoAlumnoDisplay) codigoAlumnoDisplay.value = '';
                 if (anioIngresoAlumnoDisplay) anioIngresoAlumnoDisplay.value = '';
-                
+
                 // Resetear foto al avatar por defecto
                 if (fotoContainer) {
                     fotoContainer.innerHTML = `
@@ -692,22 +678,22 @@
                         </svg>
                     `;
                 }
-                
+
                 // Ocultar mensaje de advertencia y habilitar botones
                 const mensajeMatriculado = document.getElementById('mensajeAlumnoMatriculado');
                 const btnTop = document.getElementById('btnCrearMatriculaTop');
                 const btnBottom = document.getElementById('btnCrearMatriculaBottom');
-                
+
                 if (mensajeMatriculado) {
                     mensajeMatriculado.classList.add('hidden');
                 }
                 if (btnTop) btnTop.disabled = false;
                 if (btnBottom) btnBottom.disabled = false;
-                
+
                 resultadosBusqueda.classList.add('hidden');
                 errorBuscarAlumno.classList.add('hidden');
                 ultimosResultados = []; // Limpiar los resultados almacenados
-                
+
                 // Limpiar info box
                 const infoBox = document.getElementById('infoBox');
                 if (infoBox) {
@@ -725,7 +711,7 @@
                 }
             });
         }
-        
+
         // Cerrar resultados al hacer clic fuera
         document.addEventListener('click', function(e) {
             if (!buscarAlumnoInput.contains(e.target) && !resultadosBusqueda.contains(e.target)) {
@@ -740,32 +726,32 @@
         const gradoInput = document.getElementById('combo_grado_hidden');
         const seccionContainer = document.querySelector('[data-field-name="seccion"]');
         const seccionButton = document.getElementById('combo_seccion');
-        
+
         console.log('Grado hidden input:', gradoInput);
         console.log('Seccion container:', seccionContainer);
         console.log('Seccion button:', seccionButton);
-        
+
         if (gradoInput && seccionContainer) {
             // Escuchar cambios en el input hidden de grado
             gradoInput.addEventListener('change', function () {
                 const gradoValue = this.value;
                 console.log('Grado changed to:', gradoValue);
-                
+
                 // Verificar cuántas opciones de sección están disponibles para este grado
                 const seccionOptions = seccionContainer.querySelectorAll('.combo-option');
                 let visibleCount = 0;
-                
+
                 seccionOptions.forEach(option => {
                     const parentValue = option.dataset.parent;
                     console.log('Seccion option:', option.dataset.text, 'Parent:', parentValue, 'Should show:', parentValue === gradoValue);
-                    
+
                     if (parentValue === gradoValue) {
                         visibleCount++;
                     }
                 });
-                
+
                 console.log('Total secciones visibles para grado', gradoValue, ':', visibleCount);
-                
+
                 if (visibleCount === 0) {
                     console.warn('⚠️ No hay secciones disponibles para el grado seleccionado');
                 }
@@ -776,9 +762,9 @@
     // ========== FUNCIONALIDAD DE INFORMACIÓN FINANCIERA ==========
     function cargarInfoFinanciera(alumnoId) {
         const infoBox = document.getElementById('infoBox');
-        
+
         if (!infoBox || !alumnoId) return;
-        
+
         infoBox.innerHTML = `
             <div class="text-center">
                 <svg class="w-6 h-6 mx-auto mb-2 text-blue-500 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -787,7 +773,7 @@
                 <p>Cargando información...</p>
             </div>
         `;
-        
+
         fetch(`/matriculas/api/alumnos/${alumnoId}/info`)
             .then(response => {
                 if (!response.ok) throw new Error("Error en la respuesta.");
@@ -814,7 +800,7 @@
                         </div>
                     </div>
                 `;
-                
+
                 // Actualizar el input hidden
                 const escalaInput = document.getElementById("escalaInput");
                 if (escalaInput) {
