@@ -1208,9 +1208,9 @@ class AlumnoController extends Controller
     }
 
     /**
-     * Genera un código educando único de 9 dígitos
-     * Formato: [2 dígitos más altos DNI][2 dígitos año nacimiento][2 dígitos año ingreso][2 dígitos longitud nombre][1 dígito secuencial]
-     * Ejemplo: DNI 61370146, nace 2004, ingresa 2026, nombre 30 chars -> 760426301
+     * Genera un código educando único de 6 dígitos
+     * Formato: [2 dígitos más altos DNI][2 dígitos año ingreso][2 dígitos secuencial]
+     * Ejemplo: DNI 61370146, ingresa 2026 -> 762600
      */
     private function generateCodigoEducando($dni, $fechaNacimiento, $añoIngreso, $apellidoPaterno, $apellidoMaterno, $primerNombre, $otrosNombres)
     {
@@ -1225,31 +1225,34 @@ class AlumnoController extends Controller
         }
         $digitosDni = str_pad($maxPair, 2, '0', STR_PAD_LEFT);
 
-        // 2. Extraer los últimos 2 dígitos del año de nacimiento
-        $añoNacimiento = date('y', strtotime($fechaNacimiento));
-
-        // 3. Extraer los últimos 2 dígitos del año de ingreso
+        // 2. Extraer los últimos 2 dígitos del año de ingreso
         $añoIngresoCorto = substr($añoIngreso, -2);
 
-        // 4. Calcular longitud del nombre completo
-        $nombreCompleto = trim($apellidoPaterno . $apellidoMaterno . $primerNombre . $otrosNombres);
-        $longitudNombre = strlen($nombreCompleto);
-        $longitudStr = str_pad($longitudNombre, 2, '0', STR_PAD_LEFT);
+        // 3. Generar número secuencial de 2 dígitos (00-99)
+        $baseCode = $digitosDni . $añoIngresoCorto;
+        $secuencial = 0;
+        $secuencialStr = str_pad($secuencial, 2, '0', STR_PAD_LEFT);
+        $codigoEducando = $baseCode . $secuencialStr;
 
-        // 5. Generar número secuencial
-        $baseCode = $digitosDni . $añoNacimiento . $añoIngresoCorto . $longitudStr;
-        $secuencial = 1;
-        $codigoEducando = $baseCode . $secuencial;
+        // Verificar unicidad - buscar el primer código disponible
+        $intentos = 0;
+        $maxIntentos = 100; // Máximo 100 intentos (00-99)
 
-        // Verificar unicidad
         while (Alumno::where('codigo_educando', $codigoEducando)->exists()) {
             $secuencial++;
-            if ($secuencial > 9) {
-                // Si llegamos a 10, reiniciar y buscar otra combinación
-                $secuencial = 0;
+            $intentos++;
+
+            if ($intentos >= $maxIntentos) {
+                // Si se agotaron los secuenciales, generar código aleatorio de 6 dígitos
+                do {
+                    $codigoEducando = str_pad(rand(100000, 999999), 6, '0', STR_PAD_LEFT);
+                } while (Alumno::where('codigo_educando', $codigoEducando)->exists());
+
                 break;
             }
-            $codigoEducando = $baseCode . $secuencial;
+
+            $secuencialStr = str_pad($secuencial, 2, '0', STR_PAD_LEFT);
+            $codigoEducando = $baseCode . $secuencialStr;
         }
 
         return $codigoEducando;
