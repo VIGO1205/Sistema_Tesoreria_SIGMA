@@ -31,6 +31,8 @@ use App\Helpers\Tables\TableComponent;
 use App\Helpers\Tables\TablePaginator;
 use App\Http\Controllers\Controller;
 use App\Models\NivelEducativo;
+use App\Models\DistribucionPagoDeuda;
+use App\Models\DetallePago;
 
 class FamiliarPagosController extends Controller
 {
@@ -47,6 +49,26 @@ class FamiliarPagosController extends Controller
         $requested = $request->session()->get('alumno');
         $query->where('id_alumno', '=', $requested->getKey());
 
+        // Excluir deudas que fueron pagadas y validadas completamente
+        // Paso 1: Obtener IDs de pagos que tienen estado_validacion = 'validado' en detalle_pago
+        $idPagosValidados = DetallePago::where('estado_validacion', '=', 'validado')
+            ->where('estado', '=', true)
+            ->pluck('id_pago')
+            ->unique()
+            ->toArray();
+
+        // Paso 2: Obtener IDs de deudas asociadas a esos pagos validados a través de distribucion_pago_deuda
+        if (!empty($idPagosValidados)) {
+            $idDeudasValidadas = DistribucionPagoDeuda::whereIn('id_pago', $idPagosValidados)
+                ->pluck('id_deuda')
+                ->unique()
+                ->toArray();
+
+            // Paso 3: Excluir esas deudas de la consulta
+            if (!empty($idDeudasValidadas)) {
+                $query->whereNotIn('id_deuda', $idDeudasValidadas);
+            }
+        }
 
         FilteredSearchQuery::fromQuery($query, $sqlColumns, $search, $appliedFilters, $columnMap);
 
