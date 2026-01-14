@@ -9,42 +9,89 @@ class PeriodoAcademico extends Model
     protected $table = 'periodos_academicos';
     protected $primaryKey = 'id_periodo_academico';
 
+    public $timestamps = false;
+
     protected $fillable = [
         'nombre',
-        'estado',
+        'id_estado_periodo_academico',
     ];
 
-    protected $casts = [
-        'estado' => 'boolean',
-    ];
+    public function estado()
+    {
+        return $this->belongsTo(EstadoPeriodoAcademico::class, 'id_estado_periodo_academico', 'id_estado_periodo_academico');
+    }
 
     public function matriculas()
     {
         return $this->hasMany(Matricula::class, 'id_periodo_academico', 'id_periodo_academico');
     }
 
-    /**
-     * Obtener el período académico actual
-     */
-    public static function actual()
+    public function cronograma()
     {
-        $config = Configuracion::where('clave', 'ID_PERIODO_ACADEMICO_ACTUAL')->first();
-        
-        if ($config && $config->valor) {
-            return static::find($config->valor);
-        }
-        
-        return null;
+        return $this->hasMany(CronogramaPeriodoAcademico::class, 'id_periodo_academico', 'id_periodo_academico');
     }
 
-    /**
-     * Establecer este período como actual
-     */
-    public function establecerComoActual()
+    public function prematricula()
     {
-        Configuracion::updateOrCreate(
-            ['clave' => 'ID_PERIODO_ACADEMICO_ACTUAL'],
-            ['valor' => $this->id_periodo_academico]
-        );
+        return CronogramaPeriodoAcademico::obtener($this->getKey(), TipoEtapaPeriodoAcademico::PREMATRICULA);
+    }
+
+    public function estaEnPrematricula()
+    {
+        return $this->prematricula()?->esAplicable() ?? false;
+    }
+
+    public function matricula()
+    {
+        return CronogramaPeriodoAcademico::obtener($this->getKey(), TipoEtapaPeriodoAcademico::MATRICULA);
+    }
+
+    public function estaEnMatricula()
+    {
+        return $this->matricula()?->esAplicable() ?? false;
+    }
+
+    public function enEjercicio()
+    {
+        return CronogramaPeriodoAcademico::obtener($this->getKey(), TipoEtapaPeriodoAcademico::EN_EJERCICIO);
+    }
+
+    public function estaEnEjercicio()
+    {
+        return $this->enEjercicio()?->esAplicable() ?? false;
+    }
+
+    public function matriculaExtemporanea()
+    {
+        return CronogramaPeriodoAcademico::obtener($this->getKey(), TipoEtapaPeriodoAcademico::MATRICULA_EXTEMPORANEA);
+    }
+
+    public function estaEnMatriculaExtemporanea()
+    {
+        return $this->matriculaExtemporanea()?->esAplicable() ?? false;
+    }
+
+    public function programar()
+    {
+        $this->id_estado_periodo_academico = EstadoPeriodoAcademico::PROGRAMADO;
+        $this->save();
+    }
+
+    public function desactivar()
+    {
+        $this->id_estado_periodo_academico = EstadoPeriodoAcademico::INACTIVO;
+        $this->save();
+    }
+
+    public function anular()
+    {
+        $this->id_estado_periodo_academico = EstadoPeriodoAcademico::ANULADO;
+        $this->save();
+    }
+
+    public function finalizar()
+    {
+        $this->id_estado_periodo_academico = EstadoPeriodoAcademico::FINALIZADO;
+        $this->save();
     }
 }

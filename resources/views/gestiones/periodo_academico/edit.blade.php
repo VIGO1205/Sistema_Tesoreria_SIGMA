@@ -4,17 +4,26 @@
     Editar Período Académico
 @endsection
 
+@php
+    $periodo = App\Services\Cronograma\CronogramaAcademicoService::obtenerPeriodoPorID($id);
+    $es_actual = App\Services\Cronograma\CronogramaAcademicoService::esActual($periodo);
+    $return = route('periodo_academico_view');
+
+    $periodo_actual = App\Services\Cronograma\CronogramaAcademicoService::periodoActual();
+    $estados = \App\Models\EstadoPeriodoAcademico::all()
+@endphp
+
 @section('contenido')
     <div class="p-8 m-4 bg-gray-100 dark:bg-white/[0.03] rounded-2xl">
         <!-- Header -->
         <div class="flex pb-6 justify-between items-center border-b border-gray-200 dark:border-gray-700">
             <div>
                 <h2 class="text-2xl font-bold dark:text-gray-200 text-gray-800">Editar Período Académico</h2>
-                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">ID: {{ $data['id'] }}</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">ID: {{ $periodo->getKey() }}</p>
             </div>
             <div class="flex gap-3">
-                @if(!$data['es_actual'])
-                <form action="{{ route('periodo_academico_establecerActual', ['id' => $data['id']]) }}" method="POST" class="inline">
+                @if(!$es_actual)
+                <form action="{{ route('periodo_academico_establecerActual', ['id' => $periodo->getKey()]) }}" method="POST" class="inline">
                     @csrf
                     <button type="submit"
                         class="inline-flex items-center gap-2 rounded-lg border border-blue-300 bg-blue-500 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:border-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
@@ -30,7 +39,7 @@
                     class="cursor-pointer inline-flex items-center gap-2 rounded-lg border border-green-300 bg-green-500 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:border-green-600 dark:bg-green-600 dark:hover:bg-green-700"
                     value="Guardar Cambios"
                 >
-                <a href="{{ $data['return'] }}"
+                <a href="{{ $return }}"
                     class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-6 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
                 >
                     Cancelar
@@ -43,7 +52,7 @@
             @csrf
 
             <!-- Estado actual -->
-            @if($data['es_actual'])
+            @if($es_actual)
             <div class="mb-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
                 <div class="flex items-center gap-3">
                     <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -70,15 +79,25 @@
                         'label' => 'Nombre del Período',
                         'name' => 'nombre',
                         'error' => $errors->first('nombre') ?? false,
-                        'value' => old('nombre', $data['default']['nombre']),
+                        'value' => old('nombre', $periodo->nombre),
                         'required' => true
+                    ])
+
+                    @include('components.forms.select', [
+                        'label' => 'Estado del Período',
+                        'name' => 'estado',
+                        'error' => $errors->first('estado') ?? false,
+                        'value' => old('estado', \App\Models\EstadoPeriodoAcademico::PROGRAMADO),
+                        'required' => true,
+                        'options' => $estados->pluck('nombre'),
+                        'option_values' => $estados->map(function($estado){ return $estado->getKey(); })->toArray()
                     ])
                 </div>
             </div>
 
             <!-- Botones de acción -->
             <div class="flex justify-end gap-3 pt-6 mt-6 border-t border-gray-200 dark:border-gray-700">
-                <a href="{{ $data['return'] }}"
+                <a href="{{ $return }}"
                     class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-6 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
                 >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -86,8 +105,8 @@
                     </svg>
                     Cancelar
                 </a>
-                @if(!$data['es_actual'])
-                <form action="{{ route('periodo_academico_establecerActual', ['id' => $data['id']]) }}" method="POST" class="inline">
+                @if(!$es_actual)
+                <form action="{{ route('periodo_academico_establecerActual', ['id' => $periodo->getKey()]) }}" method="POST" class="inline">
                     @csrf
                     <button type="submit"
                         class="inline-flex items-center gap-2 rounded-lg border border-blue-300 bg-blue-500 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:border-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
