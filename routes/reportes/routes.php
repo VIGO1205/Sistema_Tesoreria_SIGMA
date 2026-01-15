@@ -3,14 +3,6 @@
 use Illuminate\Support\Facades\Route;
 
 Route::group([
-    'prefix' => 'estadisticas',
-    'as' => 'estadistica_',
-    'middleware' => ['can:access-resource,"reportes"'],
-], function(){
-    require __DIR__ . '/estadisticas.php';
-});
-
-Route::group([
     'prefix' => 'reportes-academicos',
     'as' => 'reporte_academico_',
     'middleware' => ['can:access-resource,"reportes"'],

@@ -16,6 +16,7 @@ class ReporteAcademicoController extends Controller
     {
         // Obtener filtros
         $periodoId = $request->input('periodo_academico', 'all');
+        $mes = $request->input('mes');
         $nivelId = $request->input('nivel_educativo');
         $gradoId = $request->input('grado');
         $estadoSolicitud = $request->input('estado_solicitud');
@@ -38,7 +39,11 @@ class ReporteAcademicoController extends Controller
 
         if ($periodoId !== 'all') {
             $nivelQuery->where('matriculas.id_periodo_academico', $periodoId);
-        }        if ($fechaInicio && $fechaFin) {
+        }
+        if ($mes) {
+            $nivelQuery->whereMonth('matriculas.created_at', $mes);
+        }
+        if ($fechaInicio && $fechaFin) {
             $nivelQuery->whereBetween('matriculas.created_at', [$fechaInicio, $fechaFin]);
         }
         $distribucionNivel = $nivelQuery->groupBy('niveles_educativos.nombre_nivel')
@@ -61,6 +66,9 @@ class ReporteAcademicoController extends Controller
         if ($periodoId !== 'all') {
             $gradoQuery->where('matriculas.id_periodo_academico', $periodoId);
         }
+        if ($mes) {
+            $gradoQuery->whereMonth('matriculas.created_at', $mes);
+        }
         if ($nivelId) {
             $gradoQuery->where('grados.id_nivel', $nivelId);
         }        if ($fechaInicio && $fechaFin) {
@@ -82,6 +90,9 @@ class ReporteAcademicoController extends Controller
 
         if ($periodoId !== 'all') {
             $escalaQuery->where('id_periodo_academico', $periodoId);
+        }
+        if ($mes) {
+            $escalaQuery->whereMonth('created_at', $mes);
         }
         if ($nivelId) {
             $escalaQuery->whereHas('grado', function($q) use ($nivelId) {
@@ -111,6 +122,9 @@ class ReporteAcademicoController extends Controller
 
         if ($periodoId !== 'all') {
             $sexoQuery->where('matriculas.id_periodo_academico', $periodoId);
+        }
+        if ($mes) {
+            $sexoQuery->whereMonth('matriculas.created_at', $mes);
         }        if ($fechaInicio && $fechaFin) {
             $sexoQuery->whereBetween('matriculas.created_at', [$fechaInicio, $fechaFin]);
         }
@@ -125,6 +139,9 @@ class ReporteAcademicoController extends Controller
 
         if ($gradoId) {
             $prematQuery->where('id_grado', $gradoId);
+        }
+        if ($mes) {
+            $prematQuery->whereMonth('created_at', $mes);
         }
         if ($estadoSolicitud) {
             $prematQuery->where('estado', $estadoSolicitud);
@@ -153,6 +170,9 @@ class ReporteAcademicoController extends Controller
                 DB::raw('COUNT(*) as total')
             );
         
+        if ($mes) {
+            $solicitudesMesQuery->whereMonth('created_at', $mes);
+        }
         if ($fechaInicio && $fechaFin) {
             $solicitudesMesQuery->whereBetween('created_at', [$fechaInicio, $fechaFin]);
         } else {
@@ -179,6 +199,9 @@ class ReporteAcademicoController extends Controller
             )
             ->join('grados', 'solicitudes_prematricula.id_grado', '=', 'grados.id_grado');
         
+        if ($mes) {
+            $aprobacionQuery->whereMonth('solicitudes_prematricula.created_at', $mes);
+        }
         if ($fechaInicio && $fechaFin) {
             $aprobacionQuery->whereBetween('solicitudes_prematricula.created_at', [$fechaInicio, $fechaFin]);
         }
@@ -194,8 +217,11 @@ class ReporteAcademicoController extends Controller
 
         // ===== GRÁFICO 8: Capacidad vs Ocupación =====
         $subQueryFechas = '';
+        if ($mes) {
+            $subQueryFechas = ' AND MONTH(matriculas.created_at) = ' . $mes;
+        }
         if ($fechaInicio && $fechaFin) {
-            $subQueryFechas = ' AND matriculas.created_at BETWEEN "' . $fechaInicio . '" AND "' . $fechaFin . '"';
+            $subQueryFechas .= ' AND matriculas.created_at BETWEEN "' . $fechaInicio . '" AND "' . $fechaFin . '"';
         }
         
         $capacidadQuery = DB::table('secciones')

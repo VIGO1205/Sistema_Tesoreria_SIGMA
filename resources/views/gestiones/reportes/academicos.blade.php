@@ -52,7 +52,7 @@
                                 Filtros Estándar
                             </h4>
                             <p id="subtituloSeccion" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 transition-all duration-300">
-                                Selecciona período, nivel, grado y estado
+                                Selecciona año, mes, nivel, grado y estado
                             </p>
                         </div>
                     </div>
@@ -69,21 +69,51 @@
 
                 <!-- Contenido: Filtros EstÃ¡ndar -->
                 <div id="filtrosEstandar" class="transition-all duration-300 {{ request('usar_fechas') ? 'hidden' : '' }}">
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <!-- Período Académico -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                        <!-- Año -->
                         <div>
                         @php
                             $periodosArray = collect($periodos ?? [])->map(function($periodo) {
                                 return ['valor' => $periodo->id_periodo_academico, 'texto' => $periodo->nombre];
                             })->toArray();
-                            array_unshift($periodosArray, ['valor' => 'all', 'texto' => 'Todos los periodos']);
+                            array_unshift($periodosArray, ['valor' => 'all', 'texto' => 'Todos los años']);
                         @endphp
                         @include('components.forms.combo', [
-                            'label' => 'Período Académico',
+                            'label' => 'Año',
                             'name' => 'periodo_academico',
                             'error' => false,
                             'value' => request('periodo_academico', 'all'),
                             'options' => $periodosArray,
+                            'options_attributes' => ['valor', 'texto'],
+                            'disableSearch' => true
+                        ])
+                    </div>
+
+                    <!-- Mes -->
+                    <div>
+                        @php
+                            $mesesArray = [
+                                ['valor' => '', 'texto' => 'Todos los meses'],
+                                ['valor' => '1', 'texto' => 'Enero'],
+                                ['valor' => '2', 'texto' => 'Febrero'],
+                                ['valor' => '3', 'texto' => 'Marzo'],
+                                ['valor' => '4', 'texto' => 'Abril'],
+                                ['valor' => '5', 'texto' => 'Mayo'],
+                                ['valor' => '6', 'texto' => 'Junio'],
+                                ['valor' => '7', 'texto' => 'Julio'],
+                                ['valor' => '8', 'texto' => 'Agosto'],
+                                ['valor' => '9', 'texto' => 'Septiembre'],
+                                ['valor' => '10', 'texto' => 'Octubre'],
+                                ['valor' => '11', 'texto' => 'Noviembre'],
+                                ['valor' => '12', 'texto' => 'Diciembre'],
+                            ];
+                        @endphp
+                        @include('components.forms.combo', [
+                            'label' => 'Mes',
+                            'name' => 'mes',
+                            'error' => false,
+                            'value' => request('mes'),
+                            'options' => $mesesArray,
                             'options_attributes' => ['valor', 'texto'],
                             'disableSearch' => true
                         ])
@@ -346,7 +376,7 @@
 </div>
 @endsection
 
-@section('scripts')
+@push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -390,7 +420,7 @@ function toggleFechas() {
         document.getElementById('fecha_inicio').value = '';
         document.getElementById('fecha_fin').value = '';
         titulo.textContent = 'Filtros Estándar';
-        subtitulo.textContent = 'Selecciona período, nivel, grado y estado';
+        subtitulo.textContent = 'Selecciona año, mes, nivel, grado y estado';
         icono.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>';
     }
     
@@ -408,7 +438,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const toggleCheckbox = document.getElementById('activarFechas');
     if (toggleCheckbox) {
         toggleCheckbox.addEventListener('change', toggleFechas);
-        console.log('✓ Event listener del toggle agregado');
+        console.log('Event listener del toggle agregado');
     } else {
         console.error('✗ No se encontró el checkbox activarFechas');
     }
@@ -456,7 +486,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
     
-    console.log('âœ“ Chart.js cargado correctamente');
+    console.log('Chart.js cargado correctamente');
     
     // Detectar modo dark y configurar Chart.js globalmente
     const isDark = document.documentElement.classList.contains('dark');
@@ -525,7 +555,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         });
-        console.log('âœ“ GrÃ¡fico 1 (Nivel) creado');
+
     }
     
     // GRÃFICO 2: Grados
@@ -557,7 +587,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 scales: { y: { beginAtZero: true } }
             }
         });
-        console.log('âœ“ GrÃ¡fico 2 (Grado) creado');
+
     }
     
     // GRÃFICO 3: Escalas
@@ -594,7 +624,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 scales: { y: { beginAtZero: true } }
             }
         });
-        console.log('âœ“ GrÃ¡fico 3 (Escala) creado');
+
     }
     
     // GRÃFICO 4: Sexo
@@ -626,7 +656,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         });
-        console.log('âœ“ GrÃ¡fico 4 (Sexo) creado');
+
     }
     
     // GRÃFICO 5: Estado PrematrÃ­culas
@@ -659,7 +689,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         });
-        console.log('âœ“ GrÃ¡fico 5 (Estado Premat) creado');
+
     }
     
     // GRÃFICO 6: Solicitudes por Mes
@@ -691,7 +721,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 scales: { y: { beginAtZero: true } }
             }
         });
-        console.log('âœ“ GrÃ¡fico 6 (Mes) creado');
+
     }
     
     // GRÃFICO 7: AprobaciÃ³n
@@ -732,7 +762,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 scales: { y: { beginAtZero: true } }
             }
         });
-        console.log('âœ“ GrÃ¡fico 7 (AprobaciÃ³n) creado');
+
     }
     
     // GRÃFICO 8: Capacidad
@@ -780,7 +810,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         });
-        console.log('âœ“ GrÃ¡fico 8 (Capacidad) creado');
+
     }
     
     console.log('=== InicializaciÃ³n completada ===');
@@ -792,4 +822,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 </script>
-@endsection
+@endpush
