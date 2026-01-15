@@ -139,13 +139,11 @@
             'name' => 'Reportes y Estadísticas',
             'items' => [
                 'Reportes académicos',
-                'Reportes financieros',
-                'Estadísticas'
+                'Reportes financieros'
             ],
             'links' => [
                 'Reportes académicos' => 'gestiones.reportes.academicos',
-                'Reportes financieros' => 'gestiones.reportes.financieros',
-                'Estadísticas' => 'gestiones.reportes.estadisticas'
+                'Reportes financieros' => 'gestiones.reportes.financieros'
             ],
             'icon' => 'reporte'
         ])
