@@ -43,8 +43,8 @@ class DatabaseSeeder extends Seeder
             UsuariosSeeder::class,     // 2. Crea usuarios del sistema
             TestUsersSeeder::class,    // 3. Crea usuarios de prueba
             PoliticaSeeder::class,     // 4. Crea políticas
-            AlumnosSeeder::class,      // 5. Crea alumnos (depende de ConceptosSeeder)
             CronogramaSeeder::class,
+            AlumnosSeeder::class,      // 5. Crea alumnos (depende de ConceptosSeeder)
         ]);
 
         // Restablecemos el registro de acciones.

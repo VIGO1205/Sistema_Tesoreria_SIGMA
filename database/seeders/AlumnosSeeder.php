@@ -2,7 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Models\Configuracion;
+use App\Models\PeriodoAcademico;
 use App\Observers\Traits\LogsActions;
+use App\Services\Cronograma\CronogramaAcademicoService;
 use Illuminate\Database\Seeder;
 use App\Models\Alumno;
 use App\Models\Familiar;
@@ -12,7 +15,6 @@ use App\Models\User;
 use App\Models\ComposicionFamiliar;
 use Faker\Factory as Faker;
 use Carbon\Carbon;
-use App\Models\PeriodoAcademico;
 
 class AlumnosSeeder extends Seeder
 {
@@ -126,12 +128,10 @@ class AlumnosSeeder extends Seeder
                                 'estado' => true
                             ]);
 
-                            $periodoActual = PeriodoAcademico::actual();
-
                             // Matricula del alumno
                             $matricula = Matricula::create([
                                 'id_alumno' => $alumno->id_alumno,
-                                'id_periodo_academico' => $periodoActual?->id_periodo_academico,
+                                'id_periodo_academico' => Configuracion::obtener(Configuracion::ID_PERIODO_ACADEMICO_ACTUAL),
                                 'fecha_matricula' => now(),
                                 'escala' => $escala,
                                 'id_grado' => $grado->id_grado,
