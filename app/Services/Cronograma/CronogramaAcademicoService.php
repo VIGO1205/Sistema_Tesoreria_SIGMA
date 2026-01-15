@@ -11,7 +11,7 @@ class CronogramaAcademicoService implements ICronogramaAcademicoService
 {
     protected static $periodoAcademico;
 
-    public function __construct(PeriodoAcademico $periodoAcademico)
+    public static function establecerPeriodo(PeriodoAcademico $periodoAcademico)
     {
         self::$periodoAcademico = $periodoAcademico;
     }
@@ -53,7 +53,8 @@ class CronogramaAcademicoService implements ICronogramaAcademicoService
 
     public static function matriculaHabilitada(): bool
     {
-        return self::$periodoAcademico->estado->esProgramado() && self::$periodoAcademico->estaEnMatricula();
+        return self::$periodoAcademico->estado->esProgramado()
+            && (self::$periodoAcademico->estaEnMatricula() || self::$periodoAcademico->estaEnMatriculaExtemporanea());
     }
 
     public static function estaEnCurso(): bool
