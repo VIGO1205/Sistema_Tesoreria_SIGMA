@@ -5,11 +5,9 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Thiagoprz\CompositeKey\HasCompositeKey;
 
 class CronogramaPeriodoAcademico extends Model
 {
-    use HasCompositeKey;
     use HasFactory;
 
     protected $table = 'cronograma_periodo_academico';
@@ -40,20 +38,18 @@ class CronogramaPeriodoAcademico extends Model
     }
 
 
-    public function estaEnFecha(?Carbon $fecha = null)
+    public function estaEnFecha(Carbon $fecha = now())
     {
-        $fecha = $fecha ?? now();
-        $fechaInicio = Carbon::parse($this->fecha_inicio);
-        $fechaFin = Carbon::parse($this->fecha_fin);
+
+        $fechaInicio = $this->fecha_inicio;
+        $fechaFin = $this->fecha_fin;
 
         return $fecha->between($fechaInicio, $fechaFin);
     }
 
-    public static function obtener(int $idPeriodo, int $idTipoEtapa)
+    public static function obtener(int $idPeriodo, int $idEtapa)
     {
-        return self::where('id_periodo_academico', $idPeriodo)
-            ->where('id_tipo_etapa_pa', $idTipoEtapa)
-            ->first();
+        return self::find([$idPeriodo, $idEtapa]);
     }
 
     public function periodoAcademico()
